@@ -19,7 +19,7 @@ const ReportBugModal = ({ show, handleClose, projectId }) => {
                 },
             };
 
-            await axios.post('http://localhost:5000/api/bugs', {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/bugs`, {
                 title,
                 description,
                 priority,

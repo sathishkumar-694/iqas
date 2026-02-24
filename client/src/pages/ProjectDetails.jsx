@@ -25,10 +25,10 @@ const ProjectDetails = () => {
                         Authorization: `Bearer ${user.token}`,
                     },
                 };
-                const projectRes = await axios.get(`http://localhost:5000/api/projects/${id}`, config);
+                const projectRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects/${id}`, config);
                 setProject(projectRes.data);
 
-                const bugsRes = await axios.get(`http://localhost:5000/api/bugs/project/${id}`, config);
+                const bugsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/project/${id}`, config);
                 setBugs(bugsRes.data);
                 
                 // The newly updated project obj populated team_members from backend
@@ -36,7 +36,7 @@ const ProjectDetails = () => {
                 setAssignedMembers(tMembers);
 
                 if (user.role === 'Admin' || user.role === 'TL') {
-                    const usersRes = await axios.get(`http://localhost:5000/api/users`, config);
+                    const usersRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`, config);
                     
                     // Exclude already assigned members
                     let avail = usersRes.data.filter(u => !tMembers.some(m => m._id === u._id));
@@ -91,7 +91,7 @@ const ProjectDetails = () => {
     const handleAssignMember = async (userId) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.put(`http://localhost:5000/api/projects/${id}/members`, { userId }, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/projects/${id}/members`, { userId }, config);
             
             // Move from available to assigned locally
             const memberToMove = availableMembers.find(m => m._id === userId);
@@ -106,7 +106,7 @@ const ProjectDetails = () => {
     const handleRemoveMember = async (userId) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.delete(`http://localhost:5000/api/projects/${id}/members/${userId}`, config);
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/projects/${id}/members/${userId}`, config);
             
             // Move from assigned to available locally
             const memberToMove = assignedMembers.find(m => m._id === userId);

@@ -4,14 +4,24 @@ import axios from 'axios';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // MOCK USER FOR UI PREVIEW GENERATION
+    const [user, setUser] = useState({
+        _id: "preview_admin_123",
+        username: "Figma Preview Admin",
+        email: "preview@iqas.com",
+        role: "Admin",
+        token: "dummy_token"
+    });
+    const [loading, setLoading] = useState(false); // Set to false so it doesn't hang
 
     useEffect(() => {
+        // Disabled local storage check for preview mode
+        /*
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
+        */
         setLoading(false);
     }, []);
 

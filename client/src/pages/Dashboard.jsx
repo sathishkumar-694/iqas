@@ -21,7 +21,7 @@ const Dashboard = () => {
                         Authorization: `Bearer ${user.token}`,
                     },
                 };
-                const res = await axios.get('http://localhost:5000/api/projects', config);
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects`, config);
                 setProjects(res.data);
             } catch (error) {
                 console.error('Error fetching projects:', error);

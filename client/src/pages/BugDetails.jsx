@@ -24,15 +24,15 @@ const BugDetails = () => {
                         Authorization: `Bearer ${user.token}`,
                     },
                 };
-                const bugRes = await axios.get(`http://localhost:5000/api/bugs/${id}`, config);
+                const bugRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, config);
                 setBug(bugRes.data);
                 setStatus(bugRes.data.status);
 
-                const commentsRes = await axios.get(`http://localhost:5000/api/comments/${id}`, config);
+                const commentsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, config);
                 setComments(commentsRes.data);
 
                 if (user.role === 'Admin' || user.role === 'TL') {
-                    const devsRes = await axios.get(`http://localhost:5000/api/users?role=Dev`, config);
+                    const devsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/users?role=Dev`, config);
                     setDevs(devsRes.data);
                 }
             } catch (error) {
@@ -53,7 +53,7 @@ const BugDetails = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            await axios.put(`http://localhost:5000/api/bugs/${id}`, { status: newStatus }, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, { status: newStatus }, config);
             setStatus(newStatus);
         } catch (error) {
             console.error('Error updating status:', error);
@@ -68,7 +68,7 @@ const BugDetails = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            await axios.put(`http://localhost:5000/api/bugs/${id}`, { assignedTo: newAssignee }, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, { assignedTo: newAssignee }, config);
             setBug({ ...bug, assigned_to: { ...bug.assigned_to, _id: newAssignee } });
             window.location.reload(); 
         } catch (error) {
@@ -84,7 +84,7 @@ const BugDetails = () => {
                     Authorization: `Bearer ${user.token}`,
                 },
             };
-            const res = await axios.post(`http://localhost:5000/api/comments/${id}`, { comment_text: newComment }, config);
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, { comment_text: newComment }, config);
             setComments([res.data, ...comments]);
             setNewComment('');
         } catch (error) {
