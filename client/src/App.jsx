@@ -5,15 +5,18 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ProjectDetails from './pages/ProjectDetails';
 import BugDetails from './pages/BugDetails';
+import AdminLogin from './pages/AdminLogin';
 import ProtectedRoute from './components/ProtectedRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (
-    <BrowserRouter>    <AuthProvider>
-      <Routes>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
         
         <Route
           path="/dashboard"

@@ -7,9 +7,6 @@ const generateToken = (id) => {
     });
 };
 
-// @desc    Auth user & get token
-// @route   POST /api/auth/login
-// @access  Public
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -28,9 +25,6 @@ const loginUser = async (req, res) => {
     }
 };
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
 const registerUser = async (req, res) => {
     const { username, email, password, role } = req.body;
 
@@ -38,6 +32,10 @@ const registerUser = async (req, res) => {
 
     if (userExists) {
         return res.status(400).json({ message: 'User already exists' });
+    }
+
+    if (role === 'Admin') {
+        return res.status(403).json({ message: 'Admin registration is not allowed via this endpoint' });
     }
 
     const user = await User.create({
@@ -60,4 +58,31 @@ const registerUser = async (req, res) => {
     }
 };
 
-export { loginUser, registerUser };
+const adminLogin = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (email === 'admin@iqas.com' && password === 'admin123') {
+        let adminUser = await User.findOne({ email: 'admin@iqas.com' });
+        
+        if (!adminUser) {
+            adminUser = await User.create({
+                username: 'Supreme Admin',
+                email: 'admin@iqas.com',
+                password: 'admin123',
+                role: 'Admin'
+            });
+        }
+
+        res.json({
+            _id: adminUser._id,
+            username: adminUser.username,
+            email: adminUser.email,
+            role: adminUser.role,
+            token: generateToken(adminUser._id),
+        });
+    } else {
+        res.status(401).json({ message: 'Invalid Admin credentials' });
+    }
+};
+
+export { loginUser, registerUser, adminLogin };

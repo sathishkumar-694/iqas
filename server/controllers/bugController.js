@@ -1,9 +1,9 @@
 import Bug from '../models/Bug.js';
 import ActivityLog from '../models/ActivityLog.js';
+import Project from '../models/Project.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 
-// @desc    Get bugs for a project
-// @route   GET /api/projects/:projectId/bugs
-// @access  Private
 const getBugsByProject = async (req, res) => {
     try {
         const bugs = await Bug.find({ project_id: req.params.projectId })
@@ -15,9 +15,6 @@ const getBugsByProject = async (req, res) => {
     }
 };
 
-// @desc    Get single bug
-// @route   GET /api/bugs/:id
-// @access  Private
 const getBugById = async (req, res) => {
     try {
         const bug = await Bug.findById(req.params.id)
@@ -35,9 +32,6 @@ const getBugById = async (req, res) => {
     }
 };
 
-// @desc    Create a bug
-// @route   POST /api/bugs
-// @access  Private
 const createBug = async (req, res) => {
     const { title, description, priority, projectId, assignedTo, dueDate } = req.body;
 
@@ -56,12 +50,32 @@ const createBug = async (req, res) => {
             due_date: dueDate,
         });
 
-        // Log activity
         await ActivityLog.create({
             user_id: req.user._id,
             bug_id: bug._id,
             action: 'created bug',
         });
+
+        const admins = await User.find({ role: 'Admin' });
+        const project = await Project.findById(projectId);
+        
+        const notifyUsers = new Set(admins.map(a => a._id.toString()));
+        if (project && project.project_head) {
+            notifyUsers.add(project.project_head.toString());
+        }
+
+        const notifications = Array.from(notifyUsers).map(userId => ({
+            user_id: userId,
+            message: `New bug created: ${title} in project ${project?.name || projectId}`,
+        }));
+        
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
+            const io = req.app.get('io');
+            notifications.forEach(n => {
+                io.to(n.user_id.toString()).emit('new_notification', n.message);
+            });
+        }
 
         res.status(201).json(bug);
     } catch (error) {
@@ -69,29 +83,85 @@ const createBug = async (req, res) => {
     }
 };
 
-// @desc    Update a bug
-// @route   PUT /api/bugs/:id
-// @access  Private
 const updateBug = async (req, res) => {
     try {
         const bug = await Bug.findById(req.params.id);
 
         if (bug) {
-            bug.title = req.body.title || bug.title;
-            bug.description = req.body.description || bug.description;
-            bug.priority = req.body.priority || bug.priority;
-            bug.status = req.body.status || bug.status;
+            const isAssigning = req.body.assignedTo && req.body.assignedTo !== bug.assigned_to?.toString();
+            if (isAssigning && req.user.role !== 'Admin' && req.user.role !== 'TL') {
+                return res.status(403).json({ message: 'Only Admin or TL can assign bugs' });
+            }
+
+            const oldStatus = bug.status;
+
+            const isTryingToEditCore = req.body.title || req.body.description || req.body.priority;
+            
+            if (isTryingToEditCore) {
+                if (req.user.role !== 'Admin' && req.user.role !== 'TL' && req.user._id.toString() !== bug.reported_by.toString()) {
+                     return res.status(403).json({ message: 'Developers cannot change the title, description, or priority.' });
+                }
+                
+                bug.title = req.body.title || bug.title;
+                bug.description = req.body.description || bug.description;
+                bug.priority = req.body.priority || bug.priority;
+            }
+
+            if (req.body.status && req.body.status !== oldStatus) {
+                if (req.user.role === 'Dev' && (req.body.status === 'Closed' || req.body.status === 'Open')) {
+                    return res.status(403).json({ message: 'Developers can only set status to In Progress or Resolved.' });
+                }
+                
+                if (req.user.role === 'Tester' && (req.body.status === 'In Progress' || req.body.status === 'Resolved')) {
+                    return res.status(403).json({ message: 'Testers can only Reopen or Close bugs.' });
+                }
+                
+                bug.status = req.body.status;
+            }
+
             bug.assigned_to = req.body.assignedTo || bug.assigned_to;
             bug.due_date = req.body.dueDate || bug.due_date;
 
             const updatedBug = await bug.save();
 
-            // Log activity
             await ActivityLog.create({
                 user_id: req.user._id,
                 bug_id: bug._id,
                 action: 'updated bug',
             });
+
+            const io = req.app.get('io');
+
+            if (isAssigning) {
+                const message = `You have been assigned to bug: ${updatedBug.title}`;
+                await Notification.create({
+                    user_id: updatedBug.assigned_to,
+                    message: message,
+                });
+                io.to(updatedBug.assigned_to.toString()).emit('new_notification', message);
+            }
+
+            if (req.body.status && req.body.status !== oldStatus) {
+                const project = await Project.findById(updatedBug.project_id);
+                const notifyUsers = new Set();
+                notifyUsers.add(updatedBug.reported_by.toString());
+                if (project && project.project_head) {
+                    notifyUsers.add(project.project_head.toString());
+                }
+                
+                notifyUsers.delete(req.user._id.toString());
+
+                const notifications = Array.from(notifyUsers).map(userId => ({
+                    user_id: userId,
+                    message: `Bug status updated to ${updatedBug.status}: ${updatedBug.title}`,
+                }));
+                if (notifications.length > 0) {
+                    await Notification.insertMany(notifications);
+                    notifications.forEach(n => {
+                        io.to(n.user_id.toString()).emit('new_notification', n.message);
+                    });
+                }
+            }
 
             res.json(updatedBug);
         } else {
@@ -102,9 +172,6 @@ const updateBug = async (req, res) => {
     }
 };
 
-// @desc    Delete a bug
-// @route   DELETE /api/bugs/:id
-// @access  Private
 const deleteBug = async (req, res) => {
     try {
         const bug = await Bug.findById(req.params.id);

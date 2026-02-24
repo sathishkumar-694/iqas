@@ -2,24 +2,26 @@ import { useState, useContext } from 'react';
 import { Form, Button, Container, Row, Col, Alert, Card } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
+import axios from 'axios';
 
-const Register = () => {
-    const [username, setUsername] = useState('');
+const AdminLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('Tester');
     const [error, setError] = useState('');
-    const { register } = useContext(AuthContext);
+    const { login } = useContext(AuthContext); // We will use a custom login flow instead
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const result = await register(username, email, password, role);
-        if (result.success) {
-            navigate('/dashboard');
-        } else {
-            setError(result.message);
+        try {
+            const { data } = await axios.post('/api/auth/admin-login', { email, password });
+            // Save admin token to local storage and update context manually or through a new context method
+            localStorage.setItem('user', JSON.stringify(data));
+            // Force a reload to let AuthContext pick up the local storage, or ideally we add adminLogin to context
+            window.location.href = '/dashboard'; 
+        } catch (error) {
+            setError(error.response?.data?.message || 'Invalid Admin credentials');
         }
     };
 
@@ -27,27 +29,16 @@ const Register = () => {
         <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
             <Row>
                 <Col md={12}>
-                    <Card className="p-4 shadow-sm" style={{ width: '400px' }}>
+                    <Card className="p-4 shadow-sm" style={{ width: '400px', borderTop: '4px solid #dc3545' }}>
                         <Card.Body>
-                            <h2 className="text-center mb-4">IQAS Register</h2>
+                            <h2 className="text-center mb-4 text-danger">Supreme Admin Login</h2>
                             {error && <Alert variant="danger">{error}</Alert>}
                             <Form onSubmit={handleSubmit}>
-                                <Form.Group className="mb-3" controlId="formBasicUsername">
-                                    <Form.Label>Username</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Enter username"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        required
-                                    />
-                                </Form.Group>
-
                                 <Form.Group className="mb-3" controlId="formBasicEmail">
-                                    <Form.Label>Email address</Form.Label>
+                                    <Form.Label>Admin Email</Form.Label>
                                     <Form.Control
                                         type="email"
-                                        placeholder="Enter email"
+                                        placeholder="Enter admin email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
@@ -65,21 +56,12 @@ const Register = () => {
                                     />
                                 </Form.Group>
 
-                                <Form.Group className="mb-3" controlId="formGridRole">
-                                    <Form.Label>Role</Form.Label>
-                                    <Form.Select value={role} onChange={(e) => setRole(e.target.value)}>
-                                        <option value="Tester">Tester</option>
-                                        <option value="Dev">Developer</option>
-                                        <option value="TL">Team Lead (TL)</option>
-                                    </Form.Select>
-                                </Form.Group>
-
-                                <Button variant="success" type="submit" className="w-100">
-                                    Sign Up
+                                <Button variant="danger" type="submit" className="w-100 mt-2">
+                                    Secure Login
                                 </Button>
                             </Form>
                             <div className="mt-3 text-center">
-                                Already have an account? <Link to="/login">Login</Link>
+                                Not an admin? <Link to="/login" className="text-secondary">Return to normal login</Link>
                             </div>
                         </Card.Body>
                     </Card>
@@ -89,4 +71,4 @@ const Register = () => {
     );
 };
 
-export default Register;
+export default AdminLogin;

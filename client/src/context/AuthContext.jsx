@@ -29,6 +29,20 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const adminLogin = async (email, password) => {
+        try {
+            const { data } = await axios.post('/api/auth/admin-login', { email, password });
+            localStorage.setItem('user', JSON.stringify(data));
+            setUser(data);
+            return { success: true };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Admin login failed',
+            };
+        }
+    };
+
     const register = async (username, email, password, role) => {
         try {
             const { data } = await axios.post('/api/auth/register', {
@@ -54,7 +68,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, adminLogin, register, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

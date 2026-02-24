@@ -1,9 +1,11 @@
 import { useState, useEffect, useContext } from 'react';
-import { Container, Card, Button, Navbar, Nav, Row, Col } from 'react-bootstrap';
+import { Container, Card, Button, Navbar, Nav, Row, Col, Dropdown } from 'react-bootstrap';
 import AuthContext from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import CreateProjectModal from '../components/CreateProjectModal';
+import NotificationDropdown from '../components/NotificationDropdown';
+import { UserCircle } from 'lucide-react';
 
 const Dashboard = () => {
     const { user, logout } = useContext(AuthContext);
@@ -47,11 +49,22 @@ const Dashboard = () => {
                     <Navbar.Brand href="#home">IQAS</Navbar.Brand>
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
-                        <Nav>
-                            <Navbar.Text className="me-3">
-                                Signed in as: <span className="fw-bold text-white">{user?.username} ({user?.role})</span>
-                            </Navbar.Text>
-                            <Button variant="outline-light" size="sm" onClick={handleLogout}>Logout</Button>
+                        <Nav className="align-items-center">
+                            <NotificationDropdown />
+                            <Dropdown align="end">
+                                <Dropdown.Toggle variant="dark" id="dropdown-profile" className="d-flex align-items-center bg-transparent border-0 px-2 text-white shadow-none">
+                                    <UserCircle size={24} className="me-2" />
+                                    <span className="fw-semibold">{user?.username}</span>
+                                </Dropdown.Toggle>
+
+                                <Dropdown.Menu>
+                                    <Dropdown.Header className="text-muted">Signed in as {user?.role}</Dropdown.Header>
+                                    <Dropdown.Divider />
+                                    <Dropdown.Item onClick={handleLogout} className="text-danger fw-semibold">
+                                        Logout
+                                    </Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
@@ -60,9 +73,11 @@ const Dashboard = () => {
             <Container className="mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h1>Dashboard</h1>
-                    <Button variant="success" onClick={() => setShowCreateModal(true)}>
-                        Create New Project
-                    </Button>
+                    {(user?.role === 'Admin' || user?.role === 'TL') && (
+                        <Button variant="success" onClick={() => setShowCreateModal(true)}>
+                            Create New Project
+                        </Button>
+                    )}
                 </div>
 
                 <Row>

@@ -6,7 +6,10 @@ import User from '../models/User.js';
 // @access  Private
 const getProjects = async (req, res) => {
     try {
-        const projects = await Project.find({}).populate('created_by', 'username email');
+        const projects = await Project.find({})
+            .populate('created_by', 'username email')
+            .populate('project_head', 'username email')
+            .populate('team_members', 'username role');
         res.json(projects);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -18,7 +21,10 @@ const getProjects = async (req, res) => {
 // @access  Private
 const getProjectById = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id).populate('created_by', 'username email');
+        const project = await Project.findById(req.params.id)
+            .populate('created_by', 'username email')
+            .populate('project_head', 'username email')
+            .populate('team_members', 'username role');
 
         if (project) {
             res.json(project);
@@ -76,7 +82,7 @@ const updateProject = async (req, res) => {
 
 // @desc    Delete a project
 // @route   DELETE /api/projects/:id
-// @access  Private
+// @access  Private/Admin
 const deleteProject = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
@@ -92,10 +98,49 @@ const deleteProject = async (req, res) => {
     }
 };
 
+// @desc    Assign user to project team
+// @route   PUT /api/projects/:id/members
+// @access  Private/Admin|TL
+const assignTeamMember = async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const project = await Project.findById(req.params.id);
+        if (!project) return res.status(404).json({ message: 'Project not found' });
+
+        if (!project.team_members.includes(userId)) {
+            project.team_members.push(userId);
+            await project.save();
+        }
+        res.json(project);
+    } catch(error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Remove user from project team
+// @route   DELETE /api/projects/:id/members/:userId
+// @access  Private/Admin|TL
+const removeTeamMember = async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id);
+        if (!project) return res.status(404).json({ message: 'Project not found' });
+
+        project.team_members = project.team_members.filter(
+            (id) => id.toString() !== req.params.userId
+        );
+        await project.save();
+        res.json(project);
+    } catch(error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export {
     getProjects,
     getProjectById,
     createProject,
     updateProject,
     deleteProject,
+    assignTeamMember,
+    removeTeamMember
 };
