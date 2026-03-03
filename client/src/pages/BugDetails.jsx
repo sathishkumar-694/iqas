@@ -19,19 +19,21 @@ const BugDetails = () => {
     useEffect(() => {
         const fetchBugData = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                    },
+                };
                 const bugRes = await axios.get(`http://localhost:5000/api/bugs/${id}`, config);
                 setBug(bugRes.data);
                 setStatus(bugRes.data.status);
 
-                const commentsRes = await axios.get(`http://localhost:5000/api/comments/${id}`, config);
+                const commentsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, config);
                 setComments(commentsRes.data);
 
                 if (user.role === 'Admin' || user.role === 'TL') {
-                    // Get devs already stored.
                     const devsRes = await axios.get(`http://localhost:5000/api/users?role=Dev`, config);
-                    // the backend route ignores role query param currently, so we filter it here
-                    setDevs(devsRes.data.filter(u => u.role === 'Dev'));
+                    setDevs(devsRes.data);
                 }
             } catch (error) {
                 console.error('Error fetching bug details:', error);
@@ -45,7 +47,11 @@ const BugDetails = () => {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+            };
             await axios.put(`http://localhost:5000/api/bugs/${id}`, { status: newStatus }, config);
             setStatus(newStatus);
         } catch (error) {
@@ -56,11 +62,14 @@ const BugDetails = () => {
     const handleAssignChange = async (e) => {
         const newAssignee = e.target.value;
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+            };
             await axios.put(`http://localhost:5000/api/bugs/${id}`, { assignedTo: newAssignee }, config);
-            // Updating local state to reflect assignment changes without full reload
-            const devObj = devs.find(d => d._id === newAssignee) || null;
-            setBug({ ...bug, assigned_to: devObj });
+            setBug({ ...bug, assigned_to: { ...bug.assigned_to, _id: newAssignee } });
+            window.location.reload(); 
         } catch (error) {
             console.error('Error updating assignee:', error);
         }
@@ -70,7 +79,11 @@ const BugDetails = () => {
         e.preventDefault();
         if (!newComment.trim()) return;
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+            };
             const res = await axios.post(`http://localhost:5000/api/comments/${id}`, { comment_text: newComment }, config);
             setComments([res.data, ...comments]);
             setNewComment('');

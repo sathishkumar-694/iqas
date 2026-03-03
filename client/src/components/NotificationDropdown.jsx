@@ -15,7 +15,7 @@ const NotificationDropdown = () => {
             const config = {
                 headers: { Authorization: `Bearer ${user.token}` },
             };
-            const res = await axios.get('http://localhost:5000/api/notifications', config);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/notifications`, config);
             setNotifications(res.data);
             setUnreadCount(res.data.filter(n => !n.is_read).length);
         } catch (error) {
@@ -28,7 +28,7 @@ const NotificationDropdown = () => {
 
         fetchNotifications();
 
-        const socket = io('http://localhost:5000');
+        const socket = io(import.meta.env.VITE_API_URL);
         socket.emit('join_room', user._id);
 
         socket.on('new_notification', () => {
@@ -46,7 +46,7 @@ const NotificationDropdown = () => {
             const config = {
                 headers: { Authorization: `Bearer ${user.token}` },
             };
-            await axios.put(`http://localhost:5000/api/notifications/${id}/read`, {}, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/notifications/${id}/read`, {}, config);
             
             // Update local state to instantly remove the "unread" status
             setNotifications(notifications.map(n => 

@@ -23,9 +23,10 @@ const ProjectDetails = () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 const projectRes = await axios.get(`http://localhost:5000/api/projects/${id}`, config);
+
                 setProject(projectRes.data);
 
-                const bugsRes = await axios.get(`http://localhost:5000/api/bugs/project/${id}`, config);
+                const bugsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/project/${id}`, config);
                 setBugs(bugsRes.data);
                 
                 const tMembers = projectRes.data.team_members || [];
@@ -85,7 +86,9 @@ const ProjectDetails = () => {
     const handleAssignMember = async (userId) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.put(`http://localhost:5000/api/projects/${id}/members`, { userId }, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/projects/${id}/members`, { userId }, config);
+            
+            // Move from available to assigned locally
             const memberToMove = availableMembers.find(m => m._id === userId);
             setAvailableMembers(availableMembers.filter(m => m._id !== userId));
             setAssignedMembers([...assignedMembers, memberToMove]);
@@ -97,7 +100,9 @@ const ProjectDetails = () => {
     const handleRemoveMember = async (userId) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.delete(`http://localhost:5000/api/projects/${id}/members/${userId}`, config);
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/projects/${id}/members/${userId}`, config);
+            
+            // Move from assigned to available locally
             const memberToMove = assignedMembers.find(m => m._id === userId);
             setAssignedMembers(assignedMembers.filter(m => m._id !== userId));
             if (user.role === 'Admin' || memberToMove.role === 'Dev' || memberToMove.role === 'Tester') {
