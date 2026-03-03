@@ -6,7 +6,19 @@ import User from '../models/User.js';
 // @access  Private
 const getProjects = async (req, res) => {
     try {
-        const projects = await Project.find({})
+        let query = {};
+        
+        // Restrict Developers, Testers, and TLs to only their own projects
+        if (req.user.role === 'Dev' || req.user.role === 'Tester') {
+            query.team_members = req.user._id;
+        } else if (req.user.role === 'TL') {
+            query.$or = [
+                { project_head: req.user._id },
+                { team_members: req.user._id }
+            ];
+        }
+
+        const projects = await Project.find(query)
             .populate('created_by', 'username email')
             .populate('project_head', 'username email')
             .populate('team_members', 'username role');

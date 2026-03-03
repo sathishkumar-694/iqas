@@ -1,18 +1,26 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from 'react-bootstrap';
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
-const BackButton = () => {
+const BackButton = ({ fallbackRoute = '/dashboard' }) => {
     const navigate = useNavigate();
+
+    const handleBack = () => {
+        if (window.history.length > 2) {
+            navigate(-1);
+        } else {
+            navigate(fallbackRoute);
+        }
+    };
 
     return (
         <Button 
-            variant="outline-secondary" 
-            onClick={() => navigate(-1)}
-            className="mb-3 d-flex align-items-center"
-            style={{ width: 'fit-content' }}
+            variant="light" 
+            onClick={handleBack}
+            className="mb-3 d-flex align-items-center rounded-pill px-3 py-2 bg-white text-dark hover-effect"
+            style={{ width: 'fit-content', border: '1px solid #adb5bd' }}
         >
-            <ArrowLeft size={18} className="me-2" />
+            <ChevronLeft size={18} className="me-1" />
             Back
         </Button>
     );

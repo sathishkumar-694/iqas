@@ -33,7 +33,7 @@ const getBugById = async (req, res) => {
 };
 
 const createBug = async (req, res) => {
-    const { title, description, priority, projectId, assignedTo, dueDate } = req.body;
+    const { title, description, priority, projectId, assignedTo, dueDate, os, browser, device } = req.body;
 
     if (!title || !projectId) {
         return res.status(400).json({ message: 'Please add title and project ID' });
@@ -48,6 +48,9 @@ const createBug = async (req, res) => {
             reported_by: req.user._id,
             assigned_to: assignedTo,
             due_date: dueDate,
+            os,
+            browser,
+            device,
         });
 
         await ActivityLog.create({
@@ -95,16 +98,19 @@ const updateBug = async (req, res) => {
 
             const oldStatus = bug.status;
 
-            const isTryingToEditCore = req.body.title || req.body.description || req.body.priority;
+            const isTryingToEditCore = req.body.title || req.body.description || req.body.priority || req.body.os || req.body.browser || req.body.device;
             
             if (isTryingToEditCore) {
                 if (req.user.role !== 'Admin' && req.user.role !== 'TL' && req.user._id.toString() !== bug.reported_by.toString()) {
-                     return res.status(403).json({ message: 'Developers cannot change the title, description, or priority.' });
+                     return res.status(403).json({ message: 'Developers cannot change the title, description, priority, or environment specs.' });
                 }
                 
                 bug.title = req.body.title || bug.title;
                 bug.description = req.body.description || bug.description;
                 bug.priority = req.body.priority || bug.priority;
+                if (req.body.os !== undefined) bug.os = req.body.os;
+                if (req.body.browser !== undefined) bug.browser = req.body.browser;
+                if (req.body.device !== undefined) bug.device = req.body.device;
             }
 
             if (req.body.status && req.body.status !== oldStatus) {

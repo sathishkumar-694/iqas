@@ -60,8 +60,8 @@ const NotificationDropdown = () => {
 
     return (
         <Dropdown align="end" className="me-3">
-            <Dropdown.Toggle variant="dark" id="dropdown-notifications" className="position-relative bg-transparent border-0 px-2">
-                <Bell size={20} color="white" />
+            <Dropdown.Toggle variant="dark" id="dropdown-notifications" className="position-relative bg-transparent border-0 px-2 shadow-none">
+                <Bell size={22} className="text-secondary" />
                 {unreadCount > 0 && (
                     <Badge 
                         bg="danger" 

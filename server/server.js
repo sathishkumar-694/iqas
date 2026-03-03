@@ -26,6 +26,7 @@ io.on('connection', (socket) => {
         socket.join(userId);
     });
 
+    
     socket.on('disconnect', () => {
     });
 });
@@ -52,6 +53,7 @@ app.get('/api/test', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
 
 server.listen(PORT, () => {
     console.log(`Server & WebSockets running on port ${PORT}`);

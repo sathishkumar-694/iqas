@@ -1,15 +1,14 @@
 import { useState, useEffect, useContext } from 'react';
-import { Container, Card, Button, Navbar, Nav, Row, Col, Dropdown } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col, Badge } from 'react-bootstrap';
 import AuthContext from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import CreateProjectModal from '../components/CreateProjectModal';
-import NotificationDropdown from '../components/NotificationDropdown';
-import { UserCircle } from 'lucide-react';
+import Navigation from '../components/Navigation';
+import { Plus } from 'lucide-react';
 
 const Dashboard = () => {
-    const { user, logout } = useContext(AuthContext);
-    const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
     const [projects, setProjects] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -33,80 +32,86 @@ const Dashboard = () => {
         }
     }, [user]);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
     const handleProjectCreated = (newProject) => {
         setProjects([...projects, newProject]);
     };
 
+    // Determine mock status based on project length/name for visual flair
+    const getMockStatus = (projName) => {
+        if (projName.toLowerCase().includes('beta') || projName.toLowerCase().includes('pending')) return 'PENDING';
+        if (projName.toLowerCase().includes('completed') || projName.toLowerCase().includes('audit')) return 'COMPLETED';
+        return 'ACTIVE';
+    };
+
     return (
-        <>
-            <Navbar bg="dark" variant="dark" expand="lg">
-                <Container>
-                    <Navbar.Brand href="#home">IQAS</Navbar.Brand>
-                    <Navbar.Toggle aria-controls="basic-navbar-nav" />
-                    <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
-                        <Nav className="align-items-center">
-                            <NotificationDropdown />
-                            <Dropdown align="end">
-                                <Dropdown.Toggle variant="dark" id="dropdown-profile" className="d-flex align-items-center bg-transparent border-0 px-2 text-white shadow-none">
-                                    <UserCircle size={24} className="me-2" />
-                                    <span className="fw-semibold">{user?.username}</span>
-                                </Dropdown.Toggle>
+        <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh', paddingBottom: '3rem' }}>
+            <Navigation />
 
-                                <Dropdown.Menu>
-                                    <Dropdown.Header className="text-muted">Signed in as {user?.role}</Dropdown.Header>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item onClick={handleLogout} className="text-danger fw-semibold">
-                                        Logout
-                                    </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                        </Nav>
-                    </Navbar.Collapse>
-                </Container>
-            </Navbar>
-
-            <Container className="mt-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h1>Dashboard</h1>
+            <Container fluid className="px-4 mt-5">
+                <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                    <div>
+                        <h2 className="fw-bold text-dark mb-1" style={{ letterSpacing: '-0.5px' }}>Dashboard</h2>
+                        <span className="text-muted" style={{ fontSize: '0.9rem' }}>Manage and monitor all active quality assurance projects.</span>
+                    </div>
                     {(user?.role === 'Admin' || user?.role === 'TL') && (
-                        <Button variant="success" onClick={() => setShowCreateModal(true)}>
-                            Create New Project
+                        <Button 
+                            variant="success" 
+                            className="d-flex align-items-center fw-semibold rounded-pill px-3 py-2 shadow-sm"
+                            onClick={() => setShowCreateModal(true)}
+                        >
+                            <Plus size={18} className="me-1" strokeWidth={2.5} /> Create New Project
                         </Button>
                     )}
                 </div>
 
                 <Row>
-                    {projects.map((project) => (
-                        <Col key={project._id} md={4} className="mb-4">
-                            <Card>
-                                <Card.Body>
-                                    <Card.Title>{project.name}</Card.Title>
-                                    <Card.Text>
-                                        {project.description}
-                                    </Card.Text>
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <small className="text-muted">
-                                            Created by: {project.created_by?.username}
-                                        </small>
-                                        <Link to={`/projects/${project._id}`} className="btn btn-primary">
-                                            View Project
-                                        </Link>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
+                    {projects.map((project) => {
+                        const status = getMockStatus(project.name);
+                        return (
+                            <Col key={project._id} md={4} className="mb-4">
+                                <Card className="custom-card h-100">
+                                    <Card.Body className="p-4 d-flex flex-column">
+                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                            <Card.Title className="fw-bold mb-0 text-dark" style={{ fontSize: '1.25rem' }}>
+                                                {project.name}
+                                            </Card.Title>
+                                            <Badge bg="transparent" className={`badge-pill-custom badge-${status.toLowerCase()}`}>
+                                                {status}
+                                            </Badge>
+                                        </div>
+                                        
+                                        <Card.Text className="text-muted mb-4 flex-grow-1" style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
+                                            {project.description}
+                                        </Card.Text>
+
+                                        <div className="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
+                                            <div>
+                                                <small className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                                                    Created By
+                                                </small>
+                                                <div className="text-dark fw-medium" style={{ fontSize: '0.85rem' }}>
+                                                    {project.created_by?.username}
+                                                </div>
+                                            </div>
+                                            <Link to={`/projects/${project._id}`} className="btn btn-primary fw-medium px-4 rounded-3 shadow-sm">
+                                                View Project
+                                            </Link>
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        );
+                    })}
                     {projects.length === 0 && (
                         <Col>
                             <p className="text-muted">No projects found. Create one to get started.</p>
                         </Col>
                     )}
                 </Row>
+                
+                <div className="text-center mt-5">
+                    <small className="text-muted" style={{ fontSize: '0.75rem' }}>© 2026 IQAS Platform. All rights reserved.</small>
+                </div>
             </Container>
 
             <CreateProjectModal 
@@ -114,7 +119,7 @@ const Dashboard = () => {
                 handleClose={() => setShowCreateModal(false)} 
                 onProjectCreated={handleProjectCreated}
             />
-        </>
+        </div>
     );
 };
 

@@ -9,6 +9,9 @@ const ReportBugModal = ({ show, handleClose, projectId }) => {
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('Medium');
     const [dueDate, setDueDate] = useState('');
+    const [os, setOs] = useState('');
+    const [browser, setBrowser] = useState('');
+    const [device, setDevice] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -24,7 +27,10 @@ const ReportBugModal = ({ show, handleClose, projectId }) => {
                 description,
                 priority,
                 projectId,
-                dueDate
+                dueDate,
+                os,
+                browser,
+                device
             }, config);
 
             // Reset form
@@ -32,6 +38,9 @@ const ReportBugModal = ({ show, handleClose, projectId }) => {
             setDescription('');
             setPriority('Medium');
             setDueDate('');
+            setOs('');
+            setBrowser('');
+            setDevice('');
             
             handleClose();
         } catch (error) {
@@ -82,15 +91,36 @@ const ReportBugModal = ({ show, handleClose, projectId }) => {
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>Due Date</Form.Label>
+                        <Form.Label>OS (Optional)</Form.Label>
                         <Form.Control 
-                            type="date" 
-                            value={dueDate} 
-                            onChange={(e) => setDueDate(e.target.value)} 
+                            type="text" 
+                            placeholder="e.g. Windows 11, macOS Sonoma" 
+                            value={os} 
+                            onChange={(e) => setOs(e.target.value)} 
                         />
                     </Form.Group>
 
-                    <Button variant="primary" type="submit">
+                    <Form.Group className="mb-3">
+                        <Form.Label>Browser (Optional)</Form.Label>
+                        <Form.Control 
+                            type="text" 
+                            placeholder="e.g. Chrome, Firefox, Safari" 
+                            value={browser} 
+                            onChange={(e) => setBrowser(e.target.value)} 
+                        />
+                    </Form.Group>
+
+                    <Form.Group className="mb-4">
+                        <Form.Label>Device (Optional)</Form.Label>
+                        <Form.Control 
+                            type="text" 
+                            placeholder="e.g. Desktop, iPhone 14, Android Tablet" 
+                            value={device} 
+                            onChange={(e) => setDevice(e.target.value)} 
+                        />
+                    </Form.Group>
+
+                    <Button variant="primary" type="submit" className="w-100 py-2 fw-bold">
                         Submit Report
                     </Button>
                 </Form>

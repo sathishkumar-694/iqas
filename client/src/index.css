@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fa;
+    color: #1f2937;
+}
+
+/* Custom shadow for cards */
+.custom-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    background-color: #ffffff;
+}
+
+/* Standardized Pill Badges */
+.badge-pill-custom {
+    border-radius: 50rem;
+    padding: 0.35em 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+}
+
+/* Specific Badge Colors based on Mockups */
+.badge-active {
+    background-color: #e0e7ff !important;
+    color: #3730a3 !important;
+}
+
+.badge-pending {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+.badge-completed {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+.badge-high {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+}
+
+.badge-medium {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+.badge-low {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+.badge-open {
+    background-color: #e0e7ff !important;
+    color: #3730a3 !important;
+}
+
+.badge-inprogress {
+    background-color: #fae8ff !important;
+    color: #86198f !important;
+}
+
+.badge-resolved {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+.badge-closed {
+    background-color: #f3f4f6 !important;
+    color: #4b5563 !important;
+}
+
+/* Login Specifics */
+.login-container {
+    background-color: #fafbfc;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 450px;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    background: white;
+}
+
+.input-icon-wrapper {
+    position: relative;
+}
+
+.input-icon-wrapper .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+}
+
+.input-icon-wrapper .form-control {
+    padding-left: 40px;
+    border-radius: 8px;
+}
+
+/* Unified Navbar */
+.iqas-navbar {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.iqas-navbar .nav-link {
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.iqas-navbar .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+}
+
+/* Bug Data Table */
+.bug-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.bug-table td {
+    vertical-align: middle;
+    color: #374151;
+}
+
+.btn-report-bug {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}

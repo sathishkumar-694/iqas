@@ -61,14 +61,17 @@ const registerUser = async (req, res) => {
 const adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
-    if (email === 'admin@iqas.com' && password === 'admin123') {
-        let adminUser = await User.findOne({ email: 'admin@iqas.com' });
+    const envAdminEmail = process.env.ADMIN_EMAIL || 'admin@iqas.com';
+    const envAdminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+    if (email === envAdminEmail && password === envAdminPassword) {
+        let adminUser = await User.findOne({ email: envAdminEmail });
         
         if (!adminUser) {
             adminUser = await User.create({
                 username: 'Supreme Admin',
-                email: 'admin@iqas.com',
-                password: 'admin123',
+                email: envAdminEmail,
+                password: envAdminPassword,
                 role: 'Admin'
             });
         }

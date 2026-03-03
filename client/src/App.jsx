@@ -6,6 +6,9 @@ import Dashboard from './pages/Dashboard';
 import ProjectDetails from './pages/ProjectDetails';
 import BugDetails from './pages/BugDetails';
 import AdminLogin from './pages/AdminLogin';
+import ProfileSettings from './pages/ProfileSettings';
+import AdminUserList from './pages/AdminUserList';
+import Reports from './pages/Reports';
 import ProtectedRoute from './components/ProtectedRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -41,6 +44,33 @@ function App() {
           element={
             <ProtectedRoute>
               <BugDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfileSettings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <AdminUserList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Reports />
             </ProtectedRoute>
           }
         />
