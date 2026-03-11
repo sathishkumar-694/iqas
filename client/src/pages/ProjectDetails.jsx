@@ -22,7 +22,7 @@ const ProjectDetails = () => {
         const fetchProjectData = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const projectRes = await axios.get(`http://localhost:5000/api/projects/${id}`, config);
+                const projectRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects/${id}`, config);
 
                 setProject(projectRes.data);
 
@@ -33,7 +33,7 @@ const ProjectDetails = () => {
                 setAssignedMembers(tMembers);
 
                 if (user.role === 'Admin' || user.role === 'TL') {
-                    const usersRes = await axios.get(`http://localhost:5000/api/users`, config);
+                    const usersRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`, config);
                     let avail = usersRes.data.filter(u => !tMembers.some(m => m._id === u._id) && u.role !== 'Admin');
                     
                     if (user.role !== 'Admin') {

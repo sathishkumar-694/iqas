@@ -13,7 +13,7 @@ const AdminUserList = () => {
     const fetchUsers = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const res = await axios.get('http://localhost:5000/api/users', config);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`, config);
             setUsers(res.data);
             setLoading(false);
         } catch (error) {
@@ -32,7 +32,7 @@ const AdminUserList = () => {
 
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.put(`http://localhost:5000/api/users/${userId}/reset-password`, {}, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${userId}/reset-password`, {}, config);
             alert(`Password for ${username} has been reset to the default value defined in the environment.`);
         } catch (error) {
             console.error('Error resetting password:', error);
@@ -43,7 +43,7 @@ const AdminUserList = () => {
     const handleRoleChange = async (userId, newRole) => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.put(`http://localhost:5000/api/users/${userId}/role`, { role: newRole }, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${userId}/role`, { role: newRole }, config);
             setUsers(users.map(u => u._id === userId ? { ...u, role: newRole } : u));
         } catch (error) {
             console.error('Error updating role:', error);
@@ -56,7 +56,7 @@ const AdminUserList = () => {
 
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            await axios.delete(`http://localhost:5000/api/users/${userId}`, config);
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/users/${userId}`, config);
             setUsers(users.filter(u => u._id !== userId));
         } catch (error) {
             console.error('Error deleting user:', error);

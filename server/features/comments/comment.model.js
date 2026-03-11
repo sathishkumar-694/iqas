@@ -16,7 +16,10 @@ const commentSchema = mongoose.Schema({
         required: true,
     },
 }, {
-    timestamps: { createdAt: 'created_at', updatedAt: false },
+    timestamps: { 
+        createdAt: 'created_at',
+         updatedAt: false 
+        },
 });
 
 const Comment = mongoose.model('Comment', commentSchema);

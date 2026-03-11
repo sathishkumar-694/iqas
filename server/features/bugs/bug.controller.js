@@ -1,8 +1,8 @@
-import Bug from '../models/Bug.js';
-import ActivityLog from '../models/ActivityLog.js';
-import Project from '../models/Project.js';
-import User from '../models/User.js';
-import Notification from '../models/Notification.js';
+import Bug from './bug.model.js';
+import ActivityLog from '../../shared/models/activityLog.model.js';
+import Project from '../projects/project.model.js';
+import User from '../users/user.model.js';
+import Notification from '../notifications/notification.model.js';
 
 const getBugsByProject = async (req, res) => {
     try {

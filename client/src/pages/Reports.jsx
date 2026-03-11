@@ -17,7 +17,7 @@ const Reports = () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 // Fetch projects
-                const projRes = await axios.get('http://localhost:5000/api/projects', config);
+                const projRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects`, config);
                 const fetchedProjects = projRes.data;
                 setProjects(fetchedProjects);
 
@@ -27,7 +27,7 @@ const Reports = () => {
 
                 // Aggregate bugs per project for high level reporting
                 for (let p of fetchedProjects) {
-                    const bRes = await axios.get(`http://localhost:5000/api/bugs/project/${p._id}`, config);
+                    const bRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/project/${p._id}`, config);
                     const bugs = bRes.data;
                     tBugs += bugs.length;
                     tCritical += bugs.filter(b => b.priority === 'Critical').length;

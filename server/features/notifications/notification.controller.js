@@ -1,4 +1,4 @@
-import Notification from '../models/Notification.js';
+import Notification from './notification.model.js';
 
 const getNotifications = async (req, res) => {
     try {
@@ -10,9 +10,6 @@ const getNotifications = async (req, res) => {
     }
 };
 
-// @desc    Mark notification as read
-// @route   PUT /api/notifications/:id/read
-// @access  Private
 const markAsRead = async (req, res) => {
     try {
         const notification = await Notification.findById(req.params.id);

@@ -1,8 +1,5 @@
-import User from '../models/User.js';
+import User from './user.model.js';
 
-// @desc    Get all users (Filtering by role optionally)
-// @route   GET /api/users
-// @access  Private/Admin|TL
 const getUsers = async (req, res) => {
     try {
         const query = req.query.role ? { role: req.query.role } : {};
@@ -13,9 +10,6 @@ const getUsers = async (req, res) => {
     }
 };
 
-// @desc    Update user profile (Self)
-// @route   PUT /api/users/profile
-// @access  Private
 const updateUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -44,9 +38,6 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
-// @desc    Admin resets a user's password
-// @route   PUT /api/users/:id/reset-password
-// @access  Private/Admin
 const adminResetUserPassword = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -64,9 +55,6 @@ const adminResetUserPassword = async (req, res) => {
     }
 };
 
-// @desc    Admin deletes a user
-// @route   DELETE /api/users/:id
-// @access  Private/Admin
 const deleteUser = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -85,9 +73,6 @@ const deleteUser = async (req, res) => {
     }
 };
 
-// @desc    Admin updates a user's role
-// @route   PUT /api/users/:id/role
-// @access  Private/Admin
 const updateUserRole = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);

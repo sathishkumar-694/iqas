@@ -1,8 +1,5 @@
-import Comment from '../models/Comment.js';
+import Comment from './comment.model.js';
 
-// @desc    Get comments for a bug
-// @route   GET /api/bugs/:bugId/comments
-// @access  Private
 const getCommentsByBug = async (req, res) => {
     try {
         const comments = await Comment.find({ bug_id: req.params.bugId })
@@ -14,9 +11,6 @@ const getCommentsByBug = async (req, res) => {
     }
 };
 
-// @desc    Add a comment
-// @route   POST /api/bugs/:bugId/comments
-// @access  Private
 const addComment = async (req, res) => {
     const { comment_text } = req.body;
 

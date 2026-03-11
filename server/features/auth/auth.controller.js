@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import User from '../users/user.model.js';
 import jwt from 'jsonwebtoken';
 
 const generateToken = (id) => {
@@ -10,7 +10,7 @@ const generateToken = (id) => {
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
         res.json({
@@ -61,8 +61,8 @@ const registerUser = async (req, res) => {
 const adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
-    const envAdminEmail = process.env.ADMIN_EMAIL || 'admin@iqas.com';
-    const envAdminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const envAdminEmail = process.env.ADMIN_EMAIL ;
+    const envAdminPassword = process.env.ADMIN_PASSWORD;
 
     if (email === envAdminEmail && password === envAdminPassword) {
         let adminUser = await User.findOne({ email: envAdminEmail });

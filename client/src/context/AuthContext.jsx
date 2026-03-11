@@ -4,30 +4,20 @@ import axios from 'axios';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    // MOCK USER FOR UI PREVIEW GENERATION
-    const [user, setUser] = useState({
-        _id: "preview_admin_123",
-        username: "Figma Preview Admin",
-        email: "preview@iqas.com",
-        role: "Admin",
-        token: "dummy_token"
-    });
-    const [loading, setLoading] = useState(false); // Set to false so it doesn't hang
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Disabled local storage check for preview mode
-        /*
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
-        */
         setLoading(false);
     }, []);
 
     const login = async (email, password) => {
         try {
-            const { data } = await axios.post('/api/auth/login', { email, password });
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { email, password });
             localStorage.setItem('user', JSON.stringify(data));
             setUser(data);
             return { success: true };
@@ -41,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
     const adminLogin = async (email, password) => {
         try {
-            const { data } = await axios.post('/api/auth/admin-login', { email, password });
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/admin-login`, { email, password });
             localStorage.setItem('user', JSON.stringify(data));
             setUser(data);
             return { success: true };
@@ -55,7 +45,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (username, email, password, role) => {
         try {
-            const { data } = await axios.post('/api/auth/register', {
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
                 username,
                 email,
                 password,

@@ -1,14 +1,10 @@
-import Project from '../models/Project.js';
-import User from '../models/User.js';
+import Project from './project.model.js';
+import User from '../users/user.model.js';
 
-// @desc    Get all projects
-// @route   GET /api/projects
-// @access  Private
 const getProjects = async (req, res) => {
     try {
         let query = {};
         
-        // Restrict Developers, Testers, and TLs to only their own projects
         if (req.user.role === 'Dev' || req.user.role === 'Tester') {
             query.team_members = req.user._id;
         } else if (req.user.role === 'TL') {
@@ -28,9 +24,6 @@ const getProjects = async (req, res) => {
     }
 };
 
-// @desc    Get single project
-// @route   GET /api/projects/:id
-// @access  Private
 const getProjectById = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id)
@@ -48,9 +41,6 @@ const getProjectById = async (req, res) => {
     }
 };
 
-// @desc    Create a project
-// @route   POST /api/projects
-// @access  Private
 const createProject = async (req, res) => {
     const { name, description } = req.body;
 
@@ -71,9 +61,6 @@ const createProject = async (req, res) => {
     }
 };
 
-// @desc    Update a project
-// @route   PUT /api/projects/:id
-// @access  Private
 const updateProject = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
@@ -92,9 +79,6 @@ const updateProject = async (req, res) => {
     }
 };
 
-// @desc    Delete a project
-// @route   DELETE /api/projects/:id
-// @access  Private/Admin
 const deleteProject = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
@@ -110,9 +94,6 @@ const deleteProject = async (req, res) => {
     }
 };
 
-// @desc    Assign user to project team
-// @route   PUT /api/projects/:id/members
-// @access  Private/Admin|TL
 const assignTeamMember = async (req, res) => {
     const { userId } = req.body;
     try {
@@ -129,9 +110,6 @@ const assignTeamMember = async (req, res) => {
     }
 };
 
-// @desc    Remove user from project team
-// @route   DELETE /api/projects/:id/members/:userId
-// @access  Private/Admin|TL
 const removeTeamMember = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);

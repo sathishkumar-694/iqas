@@ -1,9 +1,10 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
 import http from 'http';
 import { Server } from 'socket.io';
-import connectDB from './utils/db.js';
+import connectDB from './shared/utils/db.js';
 
 dotenv.config();
 
@@ -14,8 +15,8 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST", "PUT", "DELETE"]
+        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        methods: ['GET', 'POST', 'PUT', 'DELETE']
     }
 });
 
@@ -26,20 +27,25 @@ io.on('connection', (socket) => {
         socket.join(userId);
     });
 
-    
     socket.on('disconnect', () => {
     });
 });
 
+// Security & parsing middleware
+app.use(helmet());
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true,
+}));
 app.use(express.json());
-app.use(cors());
 
-import authRoutes from './routes/authRoutes.js';
-import projectRoutes from './routes/projectRoutes.js';
-import bugRoutes from './routes/bugRoutes.js';
-import commentRoutes from './routes/commentRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import notificationRoutes from './routes/notificationRoutes.js';
+// Feature routes
+import authRoutes from './features/auth/auth.routes.js';
+import projectRoutes from './features/projects/project.routes.js';
+import bugRoutes from './features/bugs/bug.routes.js';
+import commentRoutes from './features/comments/comment.routes.js';
+import userRoutes from './features/users/user.routes.js';
+import notificationRoutes from './features/notifications/notification.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
@@ -53,7 +59,6 @@ app.get('/api/test', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-
 
 server.listen(PORT, () => {
     console.log(`Server & WebSockets running on port ${PORT}`);

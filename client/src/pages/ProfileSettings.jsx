@@ -29,7 +29,7 @@ const ProfileSettings = () => {
             const payload = { username, email };
             if (password) payload.password = password;
 
-            const res = await axios.put('http://localhost:5000/api/users/profile', payload, config);
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/profile`, payload, config);
             
             // Re-login to update the context (token stays the same technically)
             login({ ...res.data, token: user.token });
