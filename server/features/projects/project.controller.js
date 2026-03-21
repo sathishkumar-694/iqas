@@ -1,8 +1,9 @@
 import Project from './project.model.js';
-import User from '../users/user.model.js';
 
+// GET /api/projects?search=&page=&limit=
 const getProjects = async (req, res) => {
     try {
+        const { search, page = 1, limit = 20 } = req.query;
         let query = {};
         
         if (req.user.role === 'Dev' || req.user.role === 'Tester') {
@@ -14,11 +15,34 @@ const getProjects = async (req, res) => {
             ];
         }
 
+        if (search) {
+            const searchCondition = { name: { $regex: search, $options: 'i' } };
+            if (query.$or) {
+                query = { $and: [{ $or: query.$or }, searchCondition] };
+            } else {
+                Object.assign(query, searchCondition);
+            }
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const total = await Project.countDocuments(query);
         const projects = await Project.find(query)
             .populate('created_by', 'username email')
             .populate('project_head', 'username email')
-            .populate('team_members', 'username role');
-        res.json(projects);
+            .populate('team_members', 'username role')
+            .sort({ created_at: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        res.json({
+            data: projects,
+            pagination: {
+                total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(total / parseInt(limit)),
+            },
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

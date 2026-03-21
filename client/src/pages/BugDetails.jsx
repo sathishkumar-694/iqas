@@ -1,29 +1,31 @@
 import { useState, useEffect, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Container, Card, Badge, Form, Button, Row, Col, Dropdown, DropdownButton } from 'react-bootstrap';
-import AuthContext from '../context/AuthContext';
+import { useParams } from 'react-router-dom';
+import { Container, Card, Row, Col, Form, Button, Badge, ListGroup, Spinner, Accordion, Table } from 'react-bootstrap';
 import axios from 'axios';
-import Navigation from '../components/Navigation';
-import { MessageSquare, Info, History, AlertTriangle, Monitor, UserCheck, ChevronLeft, Smartphone, Globe } from 'lucide-react';
+import AuthContext from '../context/AuthContext';
+import BackButton from '../components/BackButton';
+import { Clock, User, Tag, Paperclip, MessageSquare, Activity } from 'lucide-react';
 
+const PRIORITY_COLORS = { 'Low': 'success', 'Medium': 'warning', 'High': 'danger', 'Critical': 'dark' };
+const STATUS_COLORS = { 'Open': 'danger', 'In Progress': 'warning', 'Resolved': 'info', 'Closed': 'success' };
 
 const BugDetails = () => {
     const { id } = useParams();
     const { user } = useContext(AuthContext);
     const [bug, setBug] = useState(null);
-    const [comments, setComments] = useState([]);
-    const [newComment, setNewComment] = useState('');
     const [status, setStatus] = useState('');
     const [devs, setDevs] = useState([]);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
+    const [activity, setActivity] = useState([]);
+    const [attachments, setAttachments] = useState([]);
+    const [uploading, setUploading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchBugData = async () => {
+        const fetchData = async () => {
             try {
-                const config = {
-                    headers: {
-                        Authorization: `Bearer ${user.token}`,
-                    },
-                };
+                const config = { headers: { Authorization: `Bearer ${user.token}` } };
                 const bugRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, config);
                 setBug(bugRes.data);
                 setStatus(bugRes.data.status);
@@ -31,47 +33,45 @@ const BugDetails = () => {
                 const commentsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, config);
                 setComments(commentsRes.data);
 
+                const activityRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/${id}/activity`, config);
+                setActivity(activityRes.data);
+
+                const attachRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/attachments/bug/${id}`, config);
+                setAttachments(attachRes.data);
+
                 if (user.role === 'Admin' || user.role === 'TL') {
                     const devsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/users?role=Dev`, config);
                     setDevs(devsRes.data);
                 }
             } catch (error) {
-                console.error('Error fetching bug details:', error);
+                console.error('Error fetching bug:', error);
+            } finally {
+                setLoading(false);
             }
         };
-
-        if (user) {
-            fetchBugData();
-        }
+        fetchData();
     }, [id, user]);
 
     const handleStatusChange = async (newStatus) => {
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                },
-            };
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, { status: newStatus }, config);
             setStatus(newStatus);
         } catch (error) {
             console.error('Error updating status:', error);
+            alert(error.response?.data?.message || 'Failed to update status');
         }
     };
 
-    const handleAssignChange = async (e) => {
-        const newAssignee = e.target.value;
+    const handleAssigneeChange = async (newAssignee) => {
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                },
-            };
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, { assignedTo: newAssignee }, config);
             setBug({ ...bug, assigned_to: { ...bug.assigned_to, _id: newAssignee } });
-            window.location.reload(); 
+            window.location.reload();
         } catch (error) {
-            console.error('Error updating assignee:', error);
+            console.error('Error assigning:', error);
+            alert(error.response?.data?.message || 'Failed to assign');
         }
     };
 
@@ -79,284 +79,217 @@ const BugDetails = () => {
         e.preventDefault();
         if (!newComment.trim()) return;
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                },
-            };
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, { comment_text: newComment }, config);
             setComments([res.data, ...comments]);
             setNewComment('');
         } catch (error) {
-            console.error('Error posting comment:', error);
+            console.error('Error adding comment:', error);
         }
     };
 
-    const getPriorityBadgeClass = (priority) => {
-        switch (priority) {
-            case 'Critical': return 'badge-high';
-            case 'High': return 'badge-high';
-            case 'Medium': return 'badge-medium';
-            case 'Low': return 'badge-low';
-            default: return 'bg-secondary';
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                    'Content-Type': 'multipart/form-data',
+                },
+            };
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/attachments/bug/${id}`, formData, config);
+            setAttachments([res.data, ...attachments]);
+        } catch (error) {
+            console.error('Upload failed:', error);
+            alert('File upload failed.');
+        } finally {
+            setUploading(false);
         }
     };
 
-    const getStatusBadgeClass = (status) => {
-        switch (status) {
-            case 'Open': return 'badge-open';
-            case 'In Progress': return 'badge-inprogress';
-            case 'Resolved': return 'badge-resolved';
-            case 'Closed': return 'badge-closed';
-            default: return 'bg-light text-dark';
+    const handleDeleteAttachment = async (attachId) => {
+        if (!window.confirm('Delete this attachment?')) return;
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/attachments/${attachId}`, config);
+            setAttachments(attachments.filter(a => a._id !== attachId));
+        } catch (error) {
+            console.error('Delete failed:', error);
         }
     };
 
-    if (!bug) return <div className="text-center mt-5">Loading bug data...</div>;
-
-    const bugIdFormat = `#BUG-${bug._id.substring(bug._id.length - 3)}`;
+    if (loading) return <Container className="text-center mt-5"><Spinner animation="border" /></Container>;
+    if (!bug) return <Container className="mt-4"><p>Bug not found.</p></Container>;
 
     return (
-        <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh', paddingBottom: '3rem' }}>
-            <Navigation />
-
-            <Container fluid className="px-4 mt-4">
-                {/* Improved Back Button UI */}
-                <Link 
-                    to={bug.project_id ? `/projects/${bug.project_id._id}` : '/dashboard'} 
-                    className="text-decoration-none d-inline-flex align-items-center mb-4 px-3 py-2 bg-white rounded-pill text-dark hover-effect" 
-                    style={{ fontSize: '0.9rem', fontWeight: '500', transition: 'all 0.2s', border: '1px solid #adb5bd' }}
-                >
-                    <ChevronLeft size={18} className="me-1" /> Back
-                </Link>
-
-                <div className="d-flex justify-content-between align-items-start mb-4 pb-2">
-                    <div>
-                        <div className="d-flex align-items-center mb-2">
-                            <span className="text-muted fw-bold me-3" style={{ fontFamily: 'monospace', fontSize: '1.2rem', letterSpacing: '1px' }}>{bugIdFormat}</span>
-                            <Badge bg="transparent" className={`badge-pill-custom ${getStatusBadgeClass(status)}`} style={{ fontSize: '0.8rem', padding: '0.4em 0.8em', border: '2px solid currentColor' }}>
-                                {status.toUpperCase()}
-                            </Badge>
-                        </div>
-                        <h2 className="fw-bold text-dark mb-1" style={{ letterSpacing: '-0.5px', fontSize: '2rem' }}>{bug.title}</h2>
-                    </div>
+        <Container className="mt-4 mb-5">
+            <div className="d-flex align-items-center gap-3 mb-4">
+                <BackButton />
+                <div>
+                    <h2 className="mb-0">{bug.title}</h2>
+                    <small className="text-muted">in {bug.project_id?.name || 'Unknown Project'}</small>
                 </div>
+            </div>
 
-                <Row>
-                    {/* LEFT COLUMN: MAIN CONTENT */}
-                    <Col lg={8} className="bs-border-end-0">
-                        {/* Description Section */}
-                        <Card className="custom-card mb-4 border-0">
-                            <Card.Body className="p-4">
-                                <h6 className="fw-bold text-dark mb-3 d-flex align-items-center">
-                                    <AlertTriangle size={18} className="me-2 text-warning" /> Bug Description
-                                </h6>
-                                <p className="text-dark" style={{ lineHeight: '1.7', fontSize: '0.95rem', whiteSpace: 'pre-wrap' }}>
-                                    {bug.description}
-                                </p>
-                            </Card.Body>
-                        </Card>
+            <Row>
+                {/* Main Content */}
+                <Col md={8}>
+                    <Card className="border-0 shadow-sm mb-3">
+                        <Card.Body>
+                            <h5>Description</h5>
+                            <p>{bug.description || 'No description provided.'}</p>
 
-                        {/* Discussion Section */}
-                        <Card className="custom-card border-0">
-                            <Card.Body className="p-4">
-                                <h6 className="fw-bold text-dark mb-4 d-flex align-items-center">
-                                    <MessageSquare size={18} className="me-2 text-primary" /> Bug Discussion
-                                </h6>
-
-                                <div className="mb-4">
-                                    <Form onSubmit={handleCommentSubmit}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Control
-                                                as="textarea"
-                                                rows={3}
-                                                placeholder="Add your comments, findings, or questions here..."
-                                                value={newComment}
-                                                onChange={(e) => setNewComment(e.target.value)}
-                                                className="bg-light border-0 py-2"
-                                                style={{ borderRadius: '12px', fontSize: '0.95rem' }}
-                                                required
-                                            />
-                                        </Form.Group>
-                                        <div className="d-flex justify-content-end">
-                                            <Button type="submit" variant="primary" className="fw-medium px-4 py-2 shadow-sm rounded-pill">
-                                                Post Comment
-                                            </Button>
-                                        </div>
-                                    </Form>
+                            {bug.labels && bug.labels.length > 0 && (
+                                <div className="mb-3">
+                                    <Tag size={14} className="me-2" />
+                                    {bug.labels.map((label, i) => (
+                                        <Badge key={i} bg="secondary" className="me-1">{label}</Badge>
+                                    ))}
                                 </div>
+                            )}
 
-                                <div className="d-flex flex-column gap-3">
-                                    {comments.length === 0 ? (
-                                        <div className="text-center text-muted p-4 bg-light rounded-3">
-                                            No comments yet. Start the discussion!
-                                        </div>
-                                    ) : (
-                                        comments.map((comment) => (
-                                            <div key={comment._id} className="d-flex gap-3 p-3 bg-light rounded-3">
-                                                <div className="rounded-circle bg-white shadow-sm d-flex justify-content-center align-items-center text-primary" style={{ width: '40px', height: '40px', fontWeight: 'bold', fontSize: '1.1rem', flexShrink: 0 }}>
-                                                    {comment.user_id?.username?.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div className="d-flex align-items-baseline gap-2 mb-1">
-                                                        <span className="fw-bold text-dark">{comment.user_id?.username}</span>
-                                                        <span className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                                            {new Date(comment.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-dark" style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
-                                                        {comment.comment_text}
-                                                    </div>
-                                                </div>
+                            {(bug.os || bug.browser || bug.device) && (
+                                <div className="mt-3">
+                                    <h6>Environment</h6>
+                                    <Table size="sm" bordered>
+                                        <tbody>
+                                            {bug.os && <tr><td><strong>OS</strong></td><td>{bug.os}</td></tr>}
+                                            {bug.browser && <tr><td><strong>Browser</strong></td><td>{bug.browser}</td></tr>}
+                                            {bug.device && <tr><td><strong>Device</strong></td><td>{bug.device}</td></tr>}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            )}
+                        </Card.Body>
+                    </Card>
+
+                    {/* Attachments */}
+                    <Card className="border-0 shadow-sm mb-3">
+                        <Card.Body>
+                            <h5><Paperclip size={18} className="me-2" />Attachments ({attachments.length})</h5>
+                            <Form.Group className="mb-3">
+                                <Form.Control type="file" onChange={handleFileUpload} disabled={uploading} />
+                                {uploading && <small className="text-muted">Uploading...</small>}
+                            </Form.Group>
+                            {attachments.length > 0 ? (
+                                <ListGroup variant="flush">
+                                    {attachments.map(att => (
+                                        <ListGroup.Item key={att._id} className="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <a href={`${import.meta.env.VITE_API_URL}${att.file_url}`} target="_blank" rel="noopener noreferrer">
+                                                    📎 {att.file_name}
+                                                </a>
+                                                <small className="text-muted ms-2">by {att.uploaded_by?.username}</small>
                                             </div>
-                                        ))
-                                    )}
+                                            {(att.uploaded_by?._id === user._id || user.role === 'Admin') && (
+                                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteAttachment(att._id)}>✕</Button>
+                                            )}
+                                        </ListGroup.Item>
+                                    ))}
+                                </ListGroup>
+                            ) : <p className="text-muted small">No attachments yet.</p>}
+                        </Card.Body>
+                    </Card>
+
+                    {/* Comments */}
+                    <Card className="border-0 shadow-sm mb-3">
+                        <Card.Body>
+                            <h5><MessageSquare size={18} className="me-2" />Comments ({comments.length})</h5>
+                            <Form onSubmit={handleCommentSubmit} className="mb-3">
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    placeholder="Write a comment... (use @username to mention someone)"
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                />
+                                <Button type="submit" variant="primary" size="sm" className="mt-2">Post Comment</Button>
+                            </Form>
+                            {comments.map(c => (
+                                <div key={c._id} className="border-bottom py-2">
+                                    <strong>{c.user_id?.username}</strong>
+                                    <small className="text-muted ms-2">{new Date(c.created_at).toLocaleString()}</small>
+                                    <p className="mb-0 mt-1">{c.comment_text}</p>
                                 </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+                            ))}
+                        </Card.Body>
+                    </Card>
 
-                    {/* RIGHT COLUMN: SIDEBAR DETAILS & ACTIONS */}
-                    <Col lg={4}>
-                        {/* Quick Actions Panel */}
-                        <div className="mb-4">
-                            <h6 className="fw-bold text-dark mb-3 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                                Quick Actions
-                            </h6>
-                            <Card className="custom-card border-0 bg-white">
-                                <Card.Body className="p-3 d-flex flex-column gap-2">
-                                    {/* Developer Actions */}
-                                    {user.role === 'Dev' && status === 'Open' && (
-                                        <Button variant="outline-primary" className="fw-medium text-start rounded-3" onClick={() => handleStatusChange('In Progress')}>
-                                            Start Progress
-                                        </Button>
-                                    )}
-                                    {user.role === 'Dev' && status === 'In Progress' && (
-                                        <Button variant="success" className="fw-medium text-start shadow-sm border-0 rounded-3 text-white" onClick={() => handleStatusChange('Resolved')}>
-                                            Mark as Resolved
-                                        </Button>
-                                    )}
-
-                                    {/* Tester Actions */}
-                                    {user.role === 'Tester' && status === 'Resolved' && (
-                                        <>
-                                            <Button variant="success" className="fw-medium text-start rounded-3 shadow-sm" onClick={() => handleStatusChange('Closed')}>
-                                                Verify & Close Ticket
-                                            </Button>
-                                            <Button variant="outline-danger" className="fw-medium text-start rounded-3" onClick={() => handleStatusChange('Open')}>
-                                                Reopen Ticket (Failed)
-                                            </Button>
-                                        </>
-                                    )}
-
-                                    {/* Admin/TL Force Override */}
-                                    {(user.role === 'Admin' || user.role === 'TL') && (
-                                        <DropdownButton 
-                                            id="dropdown-status-override" 
-                                            title="Override Status" 
-                                            variant="outline-secondary" 
-                                            className="w-100"
-                                        >
-                                            <Dropdown.Item onClick={() => handleStatusChange('Open')} disabled={status === 'Open'}>Open</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleStatusChange('In Progress')} disabled={status === 'In Progress'}>In Progress</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleStatusChange('Resolved')} disabled={status === 'Resolved'}>Resolved</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleStatusChange('Closed')} disabled={status === 'Closed'}>Closed</Dropdown.Item>
-                                        </DropdownButton>
-                                    )}
-
-                                    {!(user.role === 'Dev' || (user.role === 'Tester' && status === 'Resolved') || user.role === 'Admin' || user.role === 'TL') && (
-                                        <span className="text-muted small text-center">No actions available</span>
-                                    )}
-                                </Card.Body>
-                            </Card>
-                        </div>
-
-                        {/* Bug Details Meta Panel */}
-                        <div>
-                            <h6 className="fw-bold text-dark mb-3 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                                Bug Details
-                            </h6>
-                            <Card className="custom-card border-0 bg-white">
-                                <Card.Body className="p-0">
-                                    {/* Property Rows */}
-                                    <div className="d-flex justify-content-between py-3 px-4 border-bottom">
-                                        <span className="text-muted d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
-                                            <Info size={14} className="me-2" /> Project
-                                        </span>
-                                        <span className="fw-medium text-dark" style={{ fontSize: '0.85rem' }}>{bug.project_id?.name || 'N/A'}</span>
-                                    </div>
-                                    <div className="d-flex justify-content-between py-3 px-4 border-bottom">
-                                        <span className="text-muted d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
-                                            <AlertTriangle size={14} className="me-2" /> Priority
-                                        </span>
-                                        <Badge bg="transparent" className={`badge-pill-custom ${getPriorityBadgeClass(bug.priority)}`} style={{ fontSize: '0.7rem' }}>
-                                            {bug.priority}
+                    {/* Activity Timeline */}
+                    <Accordion className="mb-3">
+                        <Accordion.Item eventKey="0">
+                            <Accordion.Header><Activity size={18} className="me-2" /> Activity Timeline ({activity.length})</Accordion.Header>
+                            <Accordion.Body>
+                                {activity.length > 0 ? activity.map(log => (
+                                    <div key={log._id} className="d-flex gap-2 py-2 border-bottom">
+                                        <Badge bg="light" text="dark" className="align-self-start">
+                                            {new Date(log.timestamp).toLocaleDateString()}
                                         </Badge>
-                                    </div>
-                                    <div className="d-flex justify-content-between py-3 px-4 border-bottom">
-                                        <span className="text-muted d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
-                                            <UserCheck size={14} className="me-2" /> Reported By
-                                        </span>
-                                        <span className="fw-medium text-dark" style={{ fontSize: '0.85rem' }}>{bug.reported_by?.username || 'System User'}</span>
-                                    </div>
-                                    <div className="d-flex justify-content-between py-3 px-4 border-bottom">
-                                        <span className="text-muted d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
-                                            <History size={14} className="me-2" /> Created
-                                        </span>
-                                        <span className="fw-medium text-dark" style={{ fontSize: '0.85rem' }}>
-                                            {new Date(bug.created_at).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    <div className="py-3 px-4 border-bottom">
-                                        <span className="text-muted d-flex align-items-center mb-2" style={{ fontSize: '0.85rem' }}>
-                                            <Monitor size={14} className="me-2" /> Assigned To
-                                        </span>
-                                        {(user.role === 'Admin' || user.role === 'TL') ? (
-                                            <Form.Select 
-                                                size="sm" 
-                                                value={bug.assigned_to?._id || ''} 
-                                                onChange={handleAssignChange}
-                                                className="bg-light border-0 fw-medium"
-                                                style={{ borderRadius: '8px' }}
-                                            >
-                                                <option value="">Unassigned</option>
-                                                {devs.map(d => (
-                                                    <option key={d._id} value={d._id}>{d.username}</option>
-                                                ))}
-                                            </Form.Select>
-                                        ) : (
-                                            <div className="fw-medium text-dark bg-light p-2 rounded-3 text-center" style={{ fontSize: '0.85rem' }}>
-                                                {bug.assigned_to?.username || 'Unassigned'}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="py-3 px-4 bg-light rounded-bottom" style={{ borderRadius: '0 0 12px 12px' }}>
-                                        <span className="text-muted d-flex align-items-center mb-3 fw-semibold text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-                                            <Monitor size={14} className="me-2 text-primary" /> Environment Specs
-                                        </span>
-                                        
-                                        <div className="d-flex flex-column gap-2 text-dark" style={{ fontSize: '0.85rem' }}>
-                                            <div className="d-flex justify-content-between align-items-center pb-2 border-bottom border-secondary border-opacity-10">
-                                                <span className="text-muted d-flex align-items-center"><Monitor size={14} className="me-2" /> OS</span>
-                                                <span className="fw-medium">{bug.os || 'Not Specified'}</span>
-                                            </div>
-                                            <div className="d-flex justify-content-between align-items-center pb-2 border-bottom border-secondary border-opacity-10">
-                                                <span className="text-muted d-flex align-items-center"><Globe size={14} className="me-2" /> Browser</span>
-                                                <span className="fw-medium">{bug.browser || 'Not Specified'}</span>
-                                            </div>
-                                            <div className="d-flex justify-content-between align-items-center pb-1">
-                                                <span className="text-muted d-flex align-items-center"><Smartphone size={14} className="me-2" /> Device</span>
-                                                <span className="fw-medium">{bug.device || 'Not Specified'}</span>
-                                            </div>
+                                        <div>
+                                            <strong>{log.user_id?.username}</strong>
+                                            <span className="text-muted ms-1">— {log.action}</span>
                                         </div>
                                     </div>
-                                </Card.Body>
-                            </Card>
-                        </div>
-                    </Col>
-                </Row>
-            </Container>
-        </div>
+                                )) : <p className="text-muted">No activity yet.</p>}
+                            </Accordion.Body>
+                        </Accordion.Item>
+                    </Accordion>
+                </Col>
+
+                {/* Sidebar */}
+                <Col md={4}>
+                    <Card className="border-0 shadow-sm mb-3">
+                        <Card.Body>
+                            <h6>Status</h6>
+                            <Form.Select value={status} onChange={(e) => handleStatusChange(e.target.value)} className="mb-3">
+                                {['Open', 'In Progress', 'Resolved', 'Closed'].map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </Form.Select>
+
+                            <h6>Priority</h6>
+                            <Badge bg={PRIORITY_COLORS[bug.priority]} className="mb-3">{bug.priority}</Badge>
+
+                            <h6><User size={14} className="me-1" />Reporter</h6>
+                            <p>{bug.reported_by?.username || 'Unknown'}</p>
+
+                            <h6><User size={14} className="me-1" />Assignee</h6>
+                            {(user.role === 'Admin' || user.role === 'TL') ? (
+                                <Form.Select
+                                    value={bug.assigned_to?._id || ''}
+                                    onChange={(e) => handleAssigneeChange(e.target.value)}
+                                    className="mb-3"
+                                >
+                                    <option value="">Unassigned</option>
+                                    {devs.map(d => (
+                                        <option key={d._id} value={d._id}>{d.username}</option>
+                                    ))}
+                                </Form.Select>
+                            ) : (
+                                <p>{bug.assigned_to?.username || 'Unassigned'}</p>
+                            )}
+
+                            {bug.due_date && (
+                                <>
+                                    <h6><Clock size={14} className="me-1" />Due Date</h6>
+                                    <p className={new Date(bug.due_date) < new Date() && status !== 'Closed' ? 'text-danger fw-bold' : ''}>
+                                        {new Date(bug.due_date).toLocaleDateString()}
+                                        {new Date(bug.due_date) < new Date() && status !== 'Closed' && ' (OVERDUE)'}
+                                    </p>
+                                </>
+                            )}
+
+                            <h6>Created</h6>
+                            <small className="text-muted">{new Date(bug.created_at).toLocaleString()}</small>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 };
 

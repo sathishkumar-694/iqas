@@ -19,6 +19,10 @@ const bugSchema = mongoose.Schema({
         enum: ['Open', 'In Progress', 'Resolved', 'Closed'],
         default: 'Open',
     },
+    labels: [{
+        type: String,
+        trim: true,
+    }],
     project_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Project',
@@ -51,6 +55,8 @@ const bugSchema = mongoose.Schema({
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 });
+
+bugSchema.index({ title: 'text', description: 'text' });
 
 const Bug = mongoose.model('Bug', bugSchema);
 

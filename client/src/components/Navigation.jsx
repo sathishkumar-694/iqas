@@ -1,6 +1,6 @@
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { Navbar, Container, Nav, Dropdown } from 'react-bootstrap';
-import { Shield, UserCircle } from 'lucide-react';
+import { Shield, UserCircle, Moon, Sun } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import NotificationDropdown from './NotificationDropdown';
@@ -9,6 +9,19 @@ const Navigation = () => {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
+    const [darkMode, setDarkMode] = useState(() => {
+        return localStorage.getItem('iqas-theme') === 'dark';
+    });
+
+    useEffect(() => {
+        if (darkMode) {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+            localStorage.setItem('iqas-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-bs-theme');
+            localStorage.setItem('iqas-theme', 'light');
+        }
+    }, [darkMode]);
 
     const handleLogout = () => {
         logout();
@@ -16,7 +29,7 @@ const Navigation = () => {
     };
 
     return (
-        <Navbar bg="white" expand="lg" className="iqas-navbar sticky-top py-2">
+        <Navbar bg={darkMode ? 'dark' : 'white'} expand="lg" className="iqas-navbar sticky-top py-2" data-bs-theme={darkMode ? 'dark' : 'light'}>
             <Container fluid className="px-4">
                 <Navbar.Brand as={Link} to="/dashboard" className="d-flex align-items-center me-4">
                     <Shield size={24} className="text-primary me-2" strokeWidth={2.5} />
@@ -34,7 +47,7 @@ const Navigation = () => {
                         >
                             Dashboard
                         </Nav.Link>
-                        {/* We essentially use Dashboard for projects right now, but keeping layout styling */}
+
                         <Nav.Link as={Link} to="/reports" className={location.pathname === '/reports' ? 'active' : ''}>
                             Reports
                         </Nav.Link>
@@ -46,6 +59,11 @@ const Navigation = () => {
                     </Nav>
 
                     <Nav className="align-items-center gap-3">
+                        {/* Dark Mode Toggle */}
+                        <Nav.Link onClick={() => setDarkMode(!darkMode)} className="p-1">
+                            {darkMode ? <Sun size={20} className="text-warning" /> : <Moon size={20} />}
+                        </Nav.Link>
+
                         {/* Notification Bell */}
                         <NotificationDropdown />
                         
@@ -57,7 +75,7 @@ const Navigation = () => {
                                 className="d-flex align-items-center bg-transparent border-0 px-2 shadow-none"
                             >
                                 <div className="text-end me-2 d-none d-md-block">
-                                    <div className="fw-semibold text-dark" style={{ fontSize: '0.9rem', lineHeight: '1.2' }}>
+                                    <div className="fw-semibold" style={{ fontSize: '0.9rem', lineHeight: '1.2' }}>
                                         {user?.username}
                                     </div>
                                     <div className="text-muted" style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>

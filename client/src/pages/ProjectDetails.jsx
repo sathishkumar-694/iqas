@@ -26,8 +26,8 @@ const ProjectDetails = () => {
 
                 setProject(projectRes.data);
 
-                const bugsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/project/${id}`, config);
-                setBugs(bugsRes.data);
+                const bugsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/project/${id}?limit=100`, config);
+                setBugs(bugsRes.data.data || bugsRes.data);
                 
                 const tMembers = projectRes.data.team_members || [];
                 setAssignedMembers(tMembers);

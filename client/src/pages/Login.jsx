@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Form, Button, Alert, Card } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
@@ -8,8 +8,14 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useContext(AuthContext);
+    const { login, user } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -60,7 +66,7 @@ const Login = () => {
                         <Form.Group className="mb-4" controlId="formBasicPassword">
                             <div className="d-flex justify-content-between align-items-center mb-1">
                                 <Form.Label className="fw-semibold text-dark mb-0" style={{ fontSize: '0.85rem' }}>Password</Form.Label>
-                                <a href="#" className="text-decoration-none text-primary" style={{ fontSize: '0.8rem' }}>Forgot password?</a>
+                                <Link to="/forgot-password" className="text-decoration-none text-primary" style={{ fontSize: '0.8rem' }}>Forgot password?</Link>
                             </div>
                             <div className="input-icon-wrapper">
                                 <Lock size={18} className="icon" />

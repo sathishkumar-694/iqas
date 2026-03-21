@@ -1,149 +1,209 @@
 import { useState, useEffect, useContext } from 'react';
-import { Container, Card, Row, Col, Alert, Badge } from 'react-bootstrap';
-import AuthContext from '../context/AuthContext';
+import { Container, Row, Col, Card, Spinner, Button, Table, Badge } from 'react-bootstrap';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
-import Navigation from '../components/Navigation';
-import { BarChart3, TrendingUp, CheckCircle, AlertOctagon } from 'lucide-react';
+import AuthContext from '../context/AuthContext';
+import BackButton from '../components/BackButton';
+
+const COLORS = ['#6366f1', '#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 const Reports = () => {
     const { user } = useContext(AuthContext);
-    const [projects, setProjects] = useState([]);
-    const [metrics, setMetrics] = useState({ totalProject: 0, totalBugs: 0, critical: 0, resolved: 0 });
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchReportData = async () => {
+        const fetchStats = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                // Fetch projects
-                const projRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects`, config);
-                const fetchedProjects = projRes.data;
-                setProjects(fetchedProjects);
-
-                let tBugs = 0;
-                let tCritical = 0;
-                let tResolved = 0;
-
-                // Aggregate bugs per project for high level reporting
-                for (let p of fetchedProjects) {
-                    const bRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/project/${p._id}`, config);
-                    const bugs = bRes.data;
-                    tBugs += bugs.length;
-                    tCritical += bugs.filter(b => b.priority === 'Critical').length;
-                    tResolved += bugs.filter(b => b.status === 'Resolved' || b.status === 'Closed').length;
-                }
-
-                setMetrics({
-                    totalProject: fetchedProjects.length,
-                    totalBugs: tBugs,
-                    critical: tCritical,
-                    resolved: tResolved
-                });
-                
-                setLoading(false);
-            } catch (err) {
-                console.error(err);
-                setError('Failed to load reporting data.');
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports/dashboard`, config);
+                setStats(res.data);
+            } catch (error) {
+                console.error('Error fetching reports:', error);
+            } finally {
                 setLoading(false);
             }
         };
-
-        fetchReportData();
+        fetchStats();
     }, [user]);
 
+    const handleExportCSV = async () => {
+        try {
+            const config = {
+                headers: { Authorization: `Bearer ${user.token}` },
+                responseType: 'blob',
+            };
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports/export`, config);
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'bugs_report.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('Export failed. You may not have permission.');
+        }
+    };
+
+    if (loading) return <Container className="text-center mt-5"><Spinner animation="border" /></Container>;
+    if (!stats) return <Container className="mt-4"><p>Failed to load reports.</p></Container>;
+
+    const statusData = Object.entries(stats.bugsByStatus).map(([name, value]) => ({ name, value }));
+    const priorityData = Object.entries(stats.bugsByPriority).map(([name, value]) => ({ name, value }));
+
     return (
-        <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh', paddingBottom: '3rem' }}>
-            <Navigation />
-            
-            <Container fluid className="px-4 mt-5">
-                <div className="mb-4 pb-2 border-bottom">
-                    <h2 className="fw-bold text-dark mb-1" style={{ letterSpacing: '-0.5px' }}>System Reports</h2>
-                    <span className="text-muted" style={{ fontSize: '0.9rem' }}>High-level system metrics and bug resolution aggregates.</span>
+        <Container className="mt-4 mb-5">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <div className="d-flex align-items-center gap-3">
+                    <BackButton />
+                    <h2 className="mb-0">📊 Reports & Analytics</h2>
                 </div>
-
-                {error && <Alert variant="danger">{error}</Alert>}
-
-                {!loading && !error && (
-                    <>
-                        <Row className="mb-4 g-4">
-                            <Col md={3}>
-                                <Card className="custom-card border-0 h-100">
-                                    <Card.Body className="p-4 d-flex align-items-center">
-                                        <div className="bg-primary bg-opacity-10 text-primary p-3 rounded-3 me-3">
-                                            <BarChart3 size={24} />
-                                        </div>
-                                        <div>
-                                            <div className="text-muted fw-semibold small text-uppercase">Total Projects</div>
-                                            <h3 className="fw-bold mb-0">{metrics.totalProject}</h3>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                            <Col md={3}>
-                                <Card className="custom-card border-0 h-100">
-                                    <Card.Body className="p-4 d-flex align-items-center">
-                                        <div className="bg-info bg-opacity-10 text-info p-3 rounded-3 me-3">
-                                            <TrendingUp size={24} />
-                                        </div>
-                                        <div>
-                                            <div className="text-muted fw-semibold small text-uppercase">Total Bugs</div>
-                                            <h3 className="fw-bold mb-0">{metrics.totalBugs}</h3>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                            <Col md={3}>
-                                <Card className="custom-card border-0 h-100">
-                                    <Card.Body className="p-4 d-flex align-items-center">
-                                        <div className="bg-danger bg-opacity-10 text-danger p-3 rounded-3 me-3">
-                                            <AlertOctagon size={24} />
-                                        </div>
-                                        <div>
-                                            <div className="text-muted fw-semibold small text-uppercase">Critical Issues</div>
-                                            <h3 className="fw-bold mb-0">{metrics.critical}</h3>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                            <Col md={3}>
-                                <Card className="custom-card border-0 h-100">
-                                    <Card.Body className="p-4 d-flex align-items-center">
-                                        <div className="bg-success bg-opacity-10 text-success p-3 rounded-3 me-3">
-                                            <CheckCircle size={24} />
-                                        </div>
-                                        <div>
-                                            <div className="text-muted fw-semibold small text-uppercase">Resolved / Closed</div>
-                                            <h3 className="fw-bold mb-0">{metrics.resolved}</h3>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        </Row>
-
-                        <Card className="custom-card border-0 mt-2">
-                            <Card.Header className="bg-white border-bottom-0 pt-4 pb-0 px-4">
-                                <h5 className="fw-bold">Project Breakdown</h5>
-                            </Card.Header>
-                            <Card.Body className="p-4">
-                                {projects.length > 0 ? (
-                                    <ul className="list-group list-group-flush">
-                                        {projects.map(p => (
-                                            <li key={p._id} className="list-group-item d-flex justify-content-between align-items-center py-3 px-0 border-secondary border-opacity-10">
-                                                <span className="fw-medium text-dark">{p.name}</span>
-                                                <Badge bg="light" text="dark" className="border">Active</Badge>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <div className="text-muted text-center py-4">No projects available for reporting.</div>
-                                )}
-                            </Card.Body>
-                        </Card>
-                    </>
+                {(user.role === 'Admin' || user.role === 'TL') && (
+                    <Button variant="outline-primary" onClick={handleExportCSV}>
+                        📥 Export CSV
+                    </Button>
                 )}
-            </Container>
-        </div>
+            </div>
+
+            {/* Summary Cards */}
+            <Row className="mb-4">
+                <Col md={3}>
+                    <Card className="text-center p-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white' }}>
+                        <h3>{stats.totalProjects}</h3>
+                        <small>Total Projects</small>
+                    </Card>
+                </Col>
+                <Col md={3}>
+                    <Card className="text-center p-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #f093fb, #f5576c)', color: 'white' }}>
+                        <h3>{stats.totalBugs}</h3>
+                        <small>Total Bugs</small>
+                    </Card>
+                </Col>
+                <Col md={3}>
+                    <Card className="text-center p-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white' }}>
+                        <h3>{stats.totalUsers}</h3>
+                        <small>Total Users</small>
+                    </Card>
+                </Col>
+                <Col md={3}>
+                    <Card className="text-center p-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #fa709a, #fee140)', color: 'white' }}>
+                        <h3>{stats.overdueBugs}</h3>
+                        <small>Overdue Bugs</small>
+                    </Card>
+                </Col>
+            </Row>
+
+            {stats.avgResolutionHours > 0 && (
+                <Row className="mb-4">
+                    <Col>
+                        <Card className="p-3 border-0 shadow-sm text-center">
+                            <small className="text-muted">Average Resolution Time</small>
+                            <h4 className="mb-0">{stats.avgResolutionHours} hours</h4>
+                        </Card>
+                    </Col>
+                </Row>
+            )}
+
+            {/* Charts Row */}
+            <Row className="mb-4">
+                <Col md={6}>
+                    <Card className="p-3 border-0 shadow-sm">
+                        <h5 className="mb-3">Bugs by Status</h5>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                                <Pie data={statusData} cx="50%" cy="50%" outerRadius={100} fill="#8884d8" dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                                    {statusData.map((entry, index) => (
+                                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </Card>
+                </Col>
+                <Col md={6}>
+                    <Card className="p-3 border-0 shadow-sm">
+                        <h5 className="mb-3">Bugs by Priority</h5>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={priorityData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]}>
+                                    {priorityData.map((entry, index) => (
+                                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Bugs Over Time */}
+            {stats.bugsOverTime.length > 0 && (
+                <Row className="mb-4">
+                    <Col>
+                        <Card className="p-3 border-0 shadow-sm">
+                            <h5 className="mb-3">Bug Trend Over Time</h5>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={stats.bugsOverTime}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1' }} name="Bugs Created" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </Card>
+                    </Col>
+                </Row>
+            )}
+
+            {/* Bugs by Project & Top Assignees */}
+            <Row className="mb-4">
+                <Col md={6}>
+                    <Card className="p-3 border-0 shadow-sm">
+                        <h5 className="mb-3">Bugs by Project</h5>
+                        {stats.bugsByProject.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={stats.bugsByProject} layout="vertical">
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis type="number" />
+                                    <YAxis dataKey="projectName" type="category" width={120} />
+                                    <Tooltip />
+                                    <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-muted">No data yet</p>}
+                    </Card>
+                </Col>
+                <Col md={6}>
+                    <Card className="p-3 border-0 shadow-sm">
+                        <h5 className="mb-3">Top Bug Assignees</h5>
+                        {stats.topAssignees.length > 0 ? (
+                            <Table hover size="sm">
+                                <thead>
+                                    <tr><th>Developer</th><th>Assigned Bugs</th></tr>
+                                </thead>
+                                <tbody>
+                                    {stats.topAssignees.map((a, i) => (
+                                        <tr key={i}>
+                                            <td>{a.username}</td>
+                                            <td><Badge bg="primary">{a.count}</Badge></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        ) : <p className="text-muted">No data yet</p>}
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 };
 

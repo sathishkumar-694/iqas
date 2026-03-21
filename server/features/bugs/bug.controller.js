@@ -4,12 +4,40 @@ import Project from '../projects/project.model.js';
 import User from '../users/user.model.js';
 import Notification from '../notifications/notification.model.js';
 
+// GET /api/bugs/project/:projectId?search=&status=&priority=&label=&page=&limit=
 const getBugsByProject = async (req, res) => {
     try {
-        const bugs = await Bug.find({ project_id: req.params.projectId })
+        const { search, status, priority, label, page = 1, limit = 20 } = req.query;
+        const query = { project_id: req.params.projectId };
+
+        if (status) query.status = status;
+        if (priority) query.priority = priority;
+        if (label) query.labels = { $in: label.split(',') };
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const total = await Bug.countDocuments(query);
+        const bugs = await Bug.find(query)
             .populate('reported_by', 'username')
-            .populate('assigned_to', 'username');
-        res.json(bugs);
+            .populate('assigned_to', 'username')
+            .sort({ created_at: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        res.json({
+            data: bugs,
+            pagination: {
+                total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(total / parseInt(limit)),
+            },
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -33,7 +61,7 @@ const getBugById = async (req, res) => {
 };
 
 const createBug = async (req, res) => {
-    const { title, description, priority, projectId, assignedTo, dueDate, os, browser, device } = req.body;
+    const { title, description, priority, projectId, assignedTo, dueDate, os, browser, device, labels } = req.body;
 
     if (!title || !projectId) {
         return res.status(400).json({ message: 'Please add title and project ID' });
@@ -51,12 +79,13 @@ const createBug = async (req, res) => {
             os,
             browser,
             device,
+            labels: labels || [],
         });
 
         await ActivityLog.create({
             user_id: req.user._id,
             bug_id: bug._id,
-            action: 'created bug',
+            action: 'Created bug',
         });
 
         const admins = await User.find({ role: 'Admin' });
@@ -113,6 +142,10 @@ const updateBug = async (req, res) => {
                 if (req.body.device !== undefined) bug.device = req.body.device;
             }
 
+            if (req.body.labels) {
+                bug.labels = req.body.labels;
+            }
+
             if (req.body.status && req.body.status !== oldStatus) {
                 if (req.user.role === 'Dev' && (req.body.status === 'Closed' || req.body.status === 'Open')) {
                     return res.status(403).json({ message: 'Developers can only set status to In Progress or Resolved.' });
@@ -130,10 +163,16 @@ const updateBug = async (req, res) => {
 
             const updatedBug = await bug.save();
 
+            const actionDetails = [];
+            if (req.body.status && req.body.status !== oldStatus) actionDetails.push(`Status → ${req.body.status}`);
+            if (isAssigning) actionDetails.push(`Assigned to user`);
+            if (isTryingToEditCore) actionDetails.push(`Edited bug details`);
+            if (req.body.labels) actionDetails.push(`Updated labels`);
+
             await ActivityLog.create({
                 user_id: req.user._id,
                 bug_id: bug._id,
-                action: 'updated bug',
+                action: actionDetails.length > 0 ? actionDetails.join(', ') : 'Updated bug',
             });
 
             const io = req.app.get('io');
@@ -193,10 +232,61 @@ const deleteBug = async (req, res) => {
     }
 };
 
+// GET /api/bugs/:id/activity — activity timeline
+const getBugActivity = async (req, res) => {
+    try {
+        const logs = await ActivityLog.find({ bug_id: req.params.id })
+            .populate('user_id', 'username')
+            .sort({ timestamp: -1 });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// PUT /api/bugs/bulk — bulk status update / assign
+const bulkUpdateBugs = async (req, res) => {
+    const { bugIds, status, assignedTo, labels } = req.body;
+
+    if (!bugIds || !Array.isArray(bugIds) || bugIds.length === 0) {
+        return res.status(400).json({ message: 'bugIds array is required' });
+    }
+
+    try {
+        const updateData = {};
+        if (status) updateData.status = status;
+        if (assignedTo) updateData.assigned_to = assignedTo;
+        if (labels) updateData.labels = labels;
+
+        const result = await Bug.updateMany(
+            { _id: { $in: bugIds } },
+            { $set: updateData }
+        );
+
+        const actionParts = [];
+        if (status) actionParts.push(`Bulk status → ${status}`);
+        if (assignedTo) actionParts.push(`Bulk assigned`);
+        if (labels) actionParts.push(`Bulk labels updated`);
+
+        const logEntries = bugIds.map(bugId => ({
+            user_id: req.user._id,
+            bug_id: bugId,
+            action: actionParts.join(', ') || 'Bulk updated',
+        }));
+        await ActivityLog.insertMany(logEntries);
+
+        res.json({ message: `${result.modifiedCount} bugs updated`, modifiedCount: result.modifiedCount });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export {
     getBugsByProject,
     getBugById,
     createBug,
     updateBug,
     deleteBug,
+    getBugActivity,
+    bulkUpdateBugs,
 };

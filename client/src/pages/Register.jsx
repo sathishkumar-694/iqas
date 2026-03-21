@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Form, Button, Container, Row, Col, Alert, Card } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
@@ -9,8 +9,14 @@ const Register = () => {
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('Tester');
     const [error, setError] = useState('');
-    const { register } = useContext(AuthContext);
+    const { register, user } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

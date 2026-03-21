@@ -3,8 +3,11 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 import connectDB from './shared/utils/db.js';
+import startCronJobs from './shared/utils/cronJobs.js';
 
 dotenv.config();
 
@@ -12,6 +15,9 @@ connectDB();
 
 const app = express();
 const server = http.createServer(app);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const io = new Server(server, {
     cors: {
@@ -39,6 +45,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Feature routes
 import authRoutes from './features/auth/auth.routes.js';
 import projectRoutes from './features/projects/project.routes.js';
@@ -46,6 +55,8 @@ import bugRoutes from './features/bugs/bug.routes.js';
 import commentRoutes from './features/comments/comment.routes.js';
 import userRoutes from './features/users/user.routes.js';
 import notificationRoutes from './features/notifications/notification.routes.js';
+import attachmentRoutes from './features/attachments/attachment.routes.js';
+import reportRoutes from './features/reports/report.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
@@ -53,10 +64,15 @@ app.use('/api/bugs', bugRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/attachments', attachmentRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Server is running', status: 'OK' });
 });
+
+// Start cron jobs
+startCronJobs(io);
 
 const PORT = process.env.PORT || 5000;
 
