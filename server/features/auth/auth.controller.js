@@ -2,42 +2,98 @@ import crypto from 'crypto';
 import User from '../users/user.model.js';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import asyncHandler from 'express-async-handler';
+import Redis from 'ioredis';
 
-const generateToken = (id) => {
+// Fallback or Distributed caching setup for secure token management
+const redisClient = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
+const fallbackBlacklist = new Set(); 
+
+const addTokenToBlacklist = async (token) => {
+    if (redisClient) {
+        await redisClient.set(`bl_${token}`, 'true', 'EX', 7 * 24 * 60 * 60);
+    } else {
+        fallbackBlacklist.add(token);
+    }
+};
+
+const isTokenBlacklisted = async (token) => {
+    if (redisClient) {
+        return (await redisClient.get(`bl_${token}`)) === 'true';
+    }
+    return fallbackBlacklist.has(token);
+};
+
+const generateAccessToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE || '30d',
+        expiresIn: process.env.JWT_EXPIRES_IN || '15m', // Configurable expiry
     });
 };
 
-const loginUser = async (req, res) => {
+const generateRefreshToken = (id) => {
+    return jwt.sign({ id }, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET, {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d', // Configurable expiry
+    });
+};
+
+const setCookies = (res, accessToken, refreshToken) => {
+    res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        signed: true, // Use Signed Cookies
+        maxAge: 15 * 60 * 1000, // 15 mins
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        signed: true, // Use Signed Cookies
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+};
+
+const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    // Use .select('+password') because we configured select: false on the schema
+    const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
+        // Remove password before sending to the client logic manually
+        user.password = undefined;
+
+        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
+        
+        setCookies(res, accessToken, refreshToken);
+
         res.json({
             _id: user._id,
             username: user.username,
             email: user.email,
             role: user.role,
-            token: generateToken(user._id),
         });
     } else {
-        res.status(401).json({ message: 'Invalid email or password' });
+        res.status(401);
+        throw new Error('Invalid email or password');
     }
-};
+});
 
-const registerUser = async (req, res) => {
+const registerUser = asyncHandler(async (req, res) => {
     const { username, email, password, role } = req.body;
 
     const userExists = await User.findOne({ email });
 
     if (userExists) {
-        return res.status(400).json({ message: 'User already exists' });
+        res.status(400);
+        throw new Error('User already exists');
     }
 
     if (role === 'Admin') {
-        return res.status(403).json({ message: 'Admin registration is not allowed via this endpoint' });
+        res.status(403);
+        throw new Error('Admin registration is not allowed via this endpoint');
     }
 
     const user = await User.create({
@@ -48,26 +104,32 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
+        
+        setCookies(res, accessToken, refreshToken);
+
         res.status(201).json({
             _id: user._id,
             username: user.username,
             email: user.email,
             role: user.role,
-            token: generateToken(user._id),
         });
     } else {
-        res.status(400).json({ message: 'Invalid user data' });
+        res.status(400);
+        throw new Error('Invalid user data');
     }
-};
+});
 
-const adminLogin = async (req, res) => {
+const adminLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     const envAdminEmail = process.env.ADMIN_EMAIL || 'admin@iqas.com';
     const envAdminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
     if (email === envAdminEmail && password === envAdminPassword) {
-        let adminUser = await User.findOne({ email: envAdminEmail });
+        // Use .select('+password') because we configured select: false on the schema
+        let adminUser = await User.findOne({ email: envAdminEmail }).select('+password');
         
         if (!adminUser) {
             adminUser = await User.create({
@@ -78,97 +140,142 @@ const adminLogin = async (req, res) => {
             });
         }
 
+        const accessToken = generateAccessToken(adminUser._id);
+        const refreshToken = generateRefreshToken(adminUser._id);
+        
+        setCookies(res, accessToken, refreshToken);
+
         res.json({
             _id: adminUser._id,
             username: adminUser.username,
             email: adminUser.email,
             role: adminUser.role,
-            token: generateToken(adminUser._id),
         });
     } else {
-        res.status(401).json({ message: 'Invalid Admin credentials' });
+        res.status(401);
+        throw new Error('Invalid Admin credentials');
     }
-};
+});
 
-// POST /api/auth/forgot-password
-const forgotPassword = async (req, res) => {
+const logoutUser = asyncHandler(async (req, res) => {
+    const refreshToken = req.signedCookies.refreshToken; // Read signed cookie
+    if (refreshToken) {
+        await addTokenToBlacklist(refreshToken);
+    }
+    
+    res.cookie('accessToken', '', { httpOnly: true, signed: true, expires: new Date(0) });
+    res.cookie('refreshToken', '', { httpOnly: true, signed: true, expires: new Date(0) });
+    res.json({ message: 'Logged out successfully' });
+});
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const refreshToken = req.signedCookies.refreshToken; // Read signed cookie
+    
+    if (!refreshToken) {
+        res.status(401);
+        throw new Error('No refresh token provided');
+    }
+
+    if (await isTokenBlacklisted(refreshToken)) {
+        res.cookie('accessToken', '', { httpOnly: true, signed: true, expires: new Date(0) });
+        res.cookie('refreshToken', '', { httpOnly: true, signed: true, expires: new Date(0) });
+        res.status(403);
+        throw new Error('Token has been revoked. Please log in again.');
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET);
+    
+    const newAccessToken = generateAccessToken(decoded.id);
+    const newRefreshToken = generateRefreshToken(decoded.id);
+    
+    await addTokenToBlacklist(refreshToken);
+    setCookies(res, newAccessToken, newRefreshToken);
+    
+    res.json({ message: 'Token refreshed successfully' });
+});
+
+const getMe = asyncHandler(async (req, res) => {
+    if (req.user) {
+        res.json({
+            _id: req.user._id,
+            username: req.user.username,
+            email: req.user.email,
+            role: req.user.role,
+        });
+    } else {
+        res.status(401);
+        throw new Error('User not found');
+    }
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
-    try {
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'No account found with that email' });
-        }
-
-        // Generate reset token
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-        user.resetPasswordToken = resetTokenHash;
-        user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
-        await user.save();
-
-        // Build reset URL
-        const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
-
-        // Send email (uses SMTP config from .env, or logs to console as fallback)
-        if (process.env.SMTP_HOST) {
-            const transporter = nodemailer.createTransport({
-                host: process.env.SMTP_HOST,
-                port: process.env.SMTP_PORT || 587,
-                auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS,
-                },
-            });
-
-            await transporter.sendMail({
-                from: process.env.SMTP_FROM || 'noreply@iqas.com',
-                to: user.email,
-                subject: 'IQAS - Password Reset Request',
-                html: `<h3>Password Reset</h3><p>Click the link below to reset your password. This link expires in 30 minutes.</p><a href="${resetUrl}">${resetUrl}</a>`,
-            });
-
-            res.json({ message: 'Password reset email sent' });
-        } else {
-            // No SMTP configured — return token directly (dev mode)
-            console.log(`[DEV] Password reset link: ${resetUrl}`);
-            res.json({ message: 'Password reset link generated (check server console in dev mode)', resetUrl });
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    const user = await User.findOne({ email });
+    if (!user) {
+        res.status(404);
+        throw new Error('No account found with that email');
     }
-};
 
-// POST /api/auth/reset-password/:token
-const resetPassword = async (req, res) => {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
+    await user.save();
+
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+    if (process.env.SMTP_HOST) {
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT || 587,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        });
+
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || 'noreply@iqas.com',
+            to: user.email,
+            subject: 'IQAS - Password Reset Request',
+            html: `<h3>Password Reset</h3><p>Click the link below to reset your password. This link expires in 30 minutes.</p><a href="${resetUrl}">${resetUrl}</a>`,
+        });
+
+        res.json({ message: 'Password reset email sent' });
+    } else {
+        console.log(`[DEV] Password reset link: ${resetUrl}`);
+        res.json({ message: 'Password reset link generated (check server console in dev mode)', resetUrl });
+    }
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
     const { password } = req.body;
 
     if (!password || password.length < 6) {
-        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+        res.status(400);
+        throw new Error('Password must be at least 6 characters');
     }
 
-    try {
-        const resetTokenHash = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-        const user = await User.findOne({
-            resetPasswordToken: resetTokenHash,
-            resetPasswordExpire: { $gt: Date.now() },
-        });
+    const user = await User.findOne({
+        resetPasswordToken: resetTokenHash,
+        resetPasswordExpire: { $gt: Date.now() },
+    });
 
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid or expired reset token' });
-        }
-
-        user.password = password;
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpire = undefined;
-        await user.save();
-
-        res.json({ message: 'Password reset successful. You can now log in.' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    if (!user) {
+        res.status(400);
+        throw new Error('Invalid or expired reset token');
     }
-};
 
-export { loginUser, registerUser, adminLogin, forgotPassword, resetPassword };
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.json({ message: 'Password reset successful. You can now log in.' });
+});
+
+export { loginUser, registerUser, adminLogin, logoutUser, refreshAccessToken, getMe, forgotPassword, resetPassword };

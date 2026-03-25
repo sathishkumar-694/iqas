@@ -2,7 +2,6 @@ import { useState, useContext } from 'react';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
-import Navigation from '../components/Navigation';
 import BackButton from '../components/BackButton';
 import { Save, UserCircle } from 'lucide-react';
 
@@ -44,9 +43,7 @@ const ProfileSettings = () => {
     };
 
     return (
-        <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh', paddingBottom: '3rem' }}>
-            <Navigation />
-            
+        <div style={{ minHeight: '100vh', paddingBottom: '3rem' }}>
             <Container className="mt-4" style={{ maxWidth: '600px' }}>
                 <BackButton fallbackRoute="/dashboard" />
                 
@@ -54,7 +51,7 @@ const ProfileSettings = () => {
                     <Card.Body className="p-4 p-md-5">
                         <div className="text-center mb-4">
                             <UserCircle size={64} className="text-primary mb-3" strokeWidth={1} />
-                            <h2 className="fw-bold text-dark mb-1">Profile Settings</h2>
+                            <h2 className="fw-bold text-body mb-1">Profile Settings</h2>
                             <p className="text-muted">Manage your personal information and security.</p>
                         </div>
 
@@ -63,29 +60,29 @@ const ProfileSettings = () => {
 
                         <Form onSubmit={handleSubmit}>
                             <Form.Group className="mb-4">
-                                <Form.Label className="fw-semibold text-dark small">Username</Form.Label>
+                                <Form.Label className="fw-semibold text-body small">Username</Form.Label>
                                 <Form.Control 
                                     type="text" 
                                     value={username} 
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="py-2 bg-light border-0 rounded-3"
+                                    className="py-2 bg-body-secondary border-0 rounded-3"
                                     required
                                 />
                             </Form.Group>
 
                             <Form.Group className="mb-4">
-                                <Form.Label className="fw-semibold text-dark small">Email Address</Form.Label>
+                                <Form.Label className="fw-semibold text-body small">Email Address</Form.Label>
                                 <Form.Control 
                                     type="email" 
                                     value={email} 
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="py-2 bg-light border-0 rounded-3"
+                                    className="py-2 bg-body-secondary border-0 rounded-3"
                                     required
                                 />
                             </Form.Group>
 
                             <div className="border-top pt-4 mb-4">
-                                <h6 className="fw-bold text-dark mb-1">Update Password</h6>
+                                <h6 className="fw-bold text-body mb-1">Update Password</h6>
                                 <p className="text-muted small">Leave blank if you do not wish to change your password.</p>
                                 <Form.Group>
                                     <Form.Control 
@@ -93,7 +90,7 @@ const ProfileSettings = () => {
                                         placeholder="New Password" 
                                         value={password} 
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="py-2 bg-light border-0 rounded-3"
+                                        className="py-2 bg-body-secondary border-0 rounded-3"
                                     />
                                 </Form.Group>
                             </div>

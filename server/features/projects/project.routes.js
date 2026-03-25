@@ -14,6 +14,28 @@ import validate from '../../shared/middleware/validate.middleware.js';
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/projects:
+ *   get:
+ *     summary: Retrieve a list of projects
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search projects by name
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *     responses:
+ *       200:
+ *         description: A paginated list of projects
+ */
 router.route('/').get(protect, getProjects).post(protect, authorize('Admin', 'TL'), createProjectValidation, validate, createProject);
 router
     .route('/:id')

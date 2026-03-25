@@ -8,7 +8,7 @@ const AdminLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login, user } = useContext(AuthContext); // We will use a custom login flow instead
+    const { adminLogin, user } = useContext(AuthContext); 
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -20,14 +20,11 @@ const AdminLogin = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        try {
-            const { data } = await axios.post('/api/auth/admin-login', { email, password });
-            // Save admin token to local storage and update context manually or through a new context method
-            localStorage.setItem('user', JSON.stringify(data));
-            // Force a reload to let AuthContext pick up the local storage, or ideally we add adminLogin to context
-            window.location.href = '/dashboard'; 
-        } catch (error) {
-            setError(error.response?.data?.message || 'Invalid Admin credentials');
+        const result = await adminLogin(email, password);
+        if (result.success) {
+            navigate('/dashboard');
+        } else {
+            setError(result.message);
         }
     };
 

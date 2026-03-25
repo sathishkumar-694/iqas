@@ -33,6 +33,15 @@ const Dashboard = () => {
         fetchProjects(search, page);
     }, [page]);
 
+    useEffect(() => {
+        const debounceTimer = setTimeout(() => {
+            if (page !== 1) setPage(1); // Auto-reset page on new search
+            fetchProjects(search, 1);
+        }, 500); // 500ms live search delay
+
+        return () => clearTimeout(debounceTimer);
+    }, [search]); // Runs smoothly whenever search changes
+
     const handleSearch = (e) => {
         e.preventDefault();
         setPage(1);
@@ -57,16 +66,16 @@ const Dashboard = () => {
                 )}
             </div>
 
-            {/* Search Bar */}
+            {/* Live Search Bar */}
             <Form onSubmit={handleSearch} className="mb-4">
-                <InputGroup>
-                    <InputGroup.Text><Search size={18} /></InputGroup.Text>
+                <InputGroup className="shadow-sm">
+                    <InputGroup.Text className="bg-white"><Search size={18} className="text-primary" /></InputGroup.Text>
                     <Form.Control
-                        placeholder="Search projects by name..."
+                        placeholder="Live search projects by name..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
+                        className="py-2 border-start-0"
                     />
-                    <Button variant="outline-primary" type="submit">Search</Button>
                 </InputGroup>
             </Form>
 

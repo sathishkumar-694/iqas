@@ -95,13 +95,8 @@ const BugDetails = () => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                    'Content-Type': 'multipart/form-data',
-                },
-            };
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/attachments/bug/${id}`, formData, config);
+            
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/attachments/bug/${id}`, formData);
             setAttachments([res.data, ...attachments]);
         } catch (error) {
             console.error('Upload failed:', error);

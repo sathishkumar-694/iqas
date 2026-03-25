@@ -1,27 +1,25 @@
-import { body } from 'express-validator';
+import { z } from 'zod';
 
-export const registerValidation = [
-    body('username')
-        .trim()
-        .notEmpty().withMessage('Username is required')
-        .isLength({ min: 3, max: 30 }).withMessage('Username must be between 3 and 30 characters'),
-    body('email')
-        .trim()
-        .notEmpty().withMessage('Email is required')
-        .isEmail().withMessage('Please provide a valid email'),
-    body('password')
-        .notEmpty().withMessage('Password is required')
-        .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role')
-        .optional()
-        .isIn(['TL', 'Dev', 'Tester']).withMessage('Invalid role'),
-];
+export const registerValidation = z.object({
+    username: z.string().trim()
+        .min(1, { message: 'Username is required' })
+        .min(3, { message: 'Username must be at least 3 characters' })
+        .max(30, { message: 'Username must be at most 30 characters' }),
+    email: z.string().trim()
+        .min(1, { message: 'Email is required' })
+        .email({ message: 'Please provide a valid email' }),
+    password: z.string()
+        .min(1, { message: 'Password is required' })
+        .min(6, { message: 'Password must be at least 6 characters' }),
+    role: z.enum(['TL', 'Dev', 'Tester'], {
+        errorMap: () => ({ message: 'Invalid role' })
+    }).optional()
+});
 
-export const loginValidation = [
-    body('email')
-        .trim()
-        .notEmpty().withMessage('Email is required')
-        .isEmail().withMessage('Please provide a valid email'),
-    body('password')
-        .notEmpty().withMessage('Password is required'),
-];
+export const loginValidation = z.object({
+    email: z.string().trim()
+        .min(1, { message: 'Email is required' })
+        .email({ message: 'Please provide a valid email' }),
+    password: z.string()
+        .min(1, { message: 'Password is required' })
+});

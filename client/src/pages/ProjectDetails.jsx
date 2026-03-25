@@ -5,6 +5,7 @@ import AuthContext from '../context/AuthContext';
 import axios from 'axios';
 import ReportBugModal from '../components/ReportBugModal';
 import Navigation from '../components/Navigation';
+import { toast } from 'react-toastify';
 import { ArrowLeft, BugPlay, Search, Filter, Plus, X } from 'lucide-react';
 
 const ProjectDetails = () => {
@@ -43,6 +44,7 @@ const ProjectDetails = () => {
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
+                toast.error('Failed to load project details');
             }
         };
 
@@ -67,7 +69,7 @@ const ProjectDetails = () => {
             case 'In Progress': return 'badge-inprogress';
             case 'Resolved': return 'badge-resolved';
             case 'Closed': return 'badge-closed';
-            default: return 'bg-light text-dark';
+            default: return 'bg-body-secondary text-body';
         }
     };
 
@@ -94,6 +96,7 @@ const ProjectDetails = () => {
             setAssignedMembers([...assignedMembers, memberToMove]);
         } catch (error) {
             console.error('Error assigning member:', error);
+            toast.error('Failed to assign team member');
         }
     };
 
@@ -110,17 +113,18 @@ const ProjectDetails = () => {
             }
         } catch (error) {
             console.error('Error removing member:', error);
+            toast.error('Failed to remove team member');
         }
     };
 
     return (
-        <div style={{ backgroundColor: '#f9fafb', minHeight: '100vh', paddingBottom: '3rem' }}>
-            <Navigation />
+        <div className="bg-body-tertiary" style={{ minHeight: '100vh', paddingBottom: '3rem' }}>
+            
 
             <Container fluid className="px-4 mt-4">
                 <Link 
                     to="/dashboard" 
-                    className="text-decoration-none d-inline-flex align-items-center mb-4 px-3 py-2 bg-white rounded-pill text-dark hover-effect" 
+                    className="text-decoration-none d-inline-flex align-items-center mb-4 px-3 py-2 bg-body border border-secondary-subtle rounded-pill text-body hover-effect" 
                     style={{ fontSize: '0.9rem', fontWeight: '500', transition: 'all 0.2s', border: '1px solid #adb5bd' }}
                 >
                     <ArrowLeft size={16} className="me-2" /> Back
@@ -130,7 +134,7 @@ const ProjectDetails = () => {
                     <>
                         <div className="d-flex justify-content-between align-items-start mb-4 pb-4 border-bottom">
                             <div className="pe-4" style={{ maxWidth: '70%' }}>
-                                <h2 className="fw-bold text-dark mb-2" style={{ letterSpacing: '-0.5px' }}>{project.name}</h2>
+                                <h2 className="fw-bold text-body mb-2" style={{ letterSpacing: '-0.5px' }}>{project.name}</h2>
                                 <p className="text-muted mb-0" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>{project.description}</p>
                             </div>
                             {(user?.role === 'Admin' || user?.role === 'Tester') && (
@@ -144,6 +148,46 @@ const ProjectDetails = () => {
                             )}
                         </div>
 
+                        {/* Real-time Math Analytics / Report Banner */}
+                        <Row className="mb-4">
+                            <Col md={3} sm={6} className="mb-3 mb-md-0">
+                                <Card className="border-0 shadow-sm rounded-4 h-100 overflow-hidden position-relative">
+                                    <div className="position-absolute top-0 start-0 w-100 h-100 opacity-10" style={{ background: 'linear-gradient(45deg, #0d6efd, transparent)' }}></div>
+                                    <Card.Body className="p-3 d-flex flex-column justify-content-center position-relative z-1">
+                                        <h6 className="text-secondary fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>TOTAL BUGS</h6>
+                                        <h2 className="fw-bold mb-0 text-primary">{bugs.length}</h2>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                            <Col md={3} sm={6} className="mb-3 mb-md-0">
+                                <Card className="border-0 shadow-sm rounded-4 h-100 overflow-hidden position-relative">
+                                    <div className="position-absolute top-0 start-0 w-100 h-100 opacity-10" style={{ background: 'linear-gradient(45deg, #dc3545, transparent)' }}></div>
+                                    <Card.Body className="p-3 d-flex flex-column justify-content-center position-relative z-1">
+                                        <h6 className="text-secondary fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>OPEN BUGS</h6>
+                                        <h2 className="fw-bold mb-0 text-danger">{bugs.filter(b => b.status === 'Open').length}</h2>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                            <Col md={3} sm={6} className="mb-3 mb-md-0">
+                                <Card className="border-0 shadow-sm rounded-4 h-100 overflow-hidden position-relative">
+                                    <div className="position-absolute top-0 start-0 w-100 h-100 opacity-10" style={{ background: 'linear-gradient(45deg, #198754, transparent)' }}></div>
+                                    <Card.Body className="p-3 d-flex flex-column justify-content-center position-relative z-1">
+                                        <h6 className="text-secondary fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>RESOLVED</h6>
+                                        <h2 className="fw-bold mb-0 text-success">{bugs.filter(b => b.status === 'Resolved' || b.status === 'Closed').length}</h2>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                            <Col md={3} sm={6}>
+                                <Card className="border-0 shadow-sm rounded-4 h-100 overflow-hidden position-relative">
+                                    <div className="position-absolute top-0 start-0 w-100 h-100 opacity-10" style={{ background: 'linear-gradient(45deg, #ffc107, transparent)' }}></div>
+                                    <Card.Body className="p-3 d-flex flex-column justify-content-center position-relative z-1">
+                                        <h6 className="text-secondary fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>OVERDUE</h6>
+                                        <h2 className="fw-bold mb-0 text-warning">{bugs.filter(b => isOverdue(b.due_date) && b.status !== 'Closed' && b.status !== 'Resolved').length}</h2>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+
                         <Row>
                             {/* LEFT COLUMN: TEAM MEMBERS (Only visible to Admin & TL) */}
                             {(user?.role === 'Admin' || user?.role === 'TL') && (
@@ -151,7 +195,7 @@ const ProjectDetails = () => {
                                     {/* Current Team Section */}
                                     <div className="mb-4">
                                         <div className="d-flex justify-content-between align-items-center mb-3">
-                                            <h6 className="fw-bold mb-0 text-dark d-flex align-items-center">
+                                            <h6 className="fw-bold mb-0 text-body d-flex align-items-center">
                                                 <span className="text-primary me-2">👥</span> Current Team Members
                                             </h6>
                                             <Badge bg="primary" pill className="opacity-75">{assignedMembers.length}</Badge>
@@ -159,7 +203,7 @@ const ProjectDetails = () => {
                                         
                                         <div className="d-flex flex-column gap-2">
                                             {assignedMembers.length === 0 ? (
-                                                <div className="text-muted small p-3 text-center bg-white rounded-3 border">No members assigned</div>
+                                                <div className="text-muted small p-3 text-center bg-body border border-secondary-subtle rounded-3 border">No members assigned</div>
                                             ) : (
                                                 assignedMembers.map(member => (
                                                     <Card key={member._id} className="border-0 shadow-sm rounded-3">
@@ -169,7 +213,7 @@ const ProjectDetails = () => {
                                                                     {member.username.charAt(0).toUpperCase()}
                                                                 </div>
                                                                 <div>
-                                                                    <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{member.username}</div>
+                                                                    <div className="fw-bold text-body" style={{ fontSize: '0.9rem' }}>{member.username}</div>
                                                                     <div className="text-muted" style={{ fontSize: '0.75rem' }}>{member.role}</div>
                                                                 </div>
                                                             </div>
@@ -199,17 +243,17 @@ const ProjectDetails = () => {
                                         
                                         <div className="d-flex flex-column gap-2">
                                             {availableMembers.length === 0 ? (
-                                                <div className="text-muted small p-3 text-center bg-white rounded-3 border border-dashed">No users available</div>
+                                                <div className="text-muted small p-3 text-center bg-body border border-secondary-subtle rounded-3 border border-dashed">No users available</div>
                                             ) : (
                                                 availableMembers.map(member => (
-                                                    <Card key={member._id} className="border border-dashed shadow-sm rounded-3 bg-white">
+                                                    <Card key={member._id} className="border border-dashed shadow-sm rounded-3 bg-body border border-secondary-subtle">
                                                         <Card.Body className="p-3 d-flex align-items-center justify-content-between">
                                                             <div className="d-flex align-items-center">
                                                                 <div className="rounded-circle d-flex justify-content-center align-items-center me-3 text-muted" style={{ width: '36px', height: '36px', backgroundColor: '#f3f4f6', fontWeight: 'bold' }}>
                                                                     {member.username.charAt(0).toUpperCase()}
                                                                 </div>
                                                                 <div>
-                                                                    <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{member.username}</div>
+                                                                    <div className="fw-bold text-body" style={{ fontSize: '0.9rem' }}>{member.username}</div>
                                                                     <div className="text-muted" style={{ fontSize: '0.75rem' }}>{member.role}</div>
                                                                 </div>
                                                             </div>
@@ -236,7 +280,7 @@ const ProjectDetails = () => {
                                 <Card className="custom-card">
                                     <Card.Body className="p-0">
                                         <div className="d-flex flex-wrap justify-content-between align-items-center p-4 border-bottom">
-                                            <h5 className="fw-bold mb-0 text-dark d-flex align-items-center">
+                                            <h5 className="fw-bold mb-0 text-body d-flex align-items-center">
                                                 <span className="text-warning me-2">☰</span> Bug Tracking
                                             </h5>
                                             
@@ -248,14 +292,14 @@ const ProjectDetails = () => {
                                                         placeholder="Search bugs..."
                                                         value={searchTerm}
                                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                                        className="ps-5 bg-light border-0"
+                                                        className="ps-5 bg-body-secondary border-0"
                                                         style={{ width: '220px', borderRadius: '8px' }}
                                                     />
                                                 </div>
                                                 <Form.Select 
                                                     value={filterStatus} 
                                                     onChange={(e) => setFilterStatus(e.target.value)}
-                                                    className="bg-light border-0 fw-medium text-dark"
+                                                    className="bg-body-secondary border-0 fw-medium text-body"
                                                     style={{ width: '160px', borderRadius: '8px' }}
                                                 >
                                                     <option value="All">All Statuses</option>
@@ -270,13 +314,13 @@ const ProjectDetails = () => {
                                         <Table hover responsive className="bug-table mb-0 align-middle">
                                             <thead>
                                                 <tr>
-                                                    <th className="px-4 py-3 bg-white border-0 border-bottom text-muted">ID</th>
-                                                    <th className="py-3 bg-white border-0 border-bottom text-muted">TITLE</th>
-                                                    <th className="py-3 bg-white border-0 border-bottom text-muted">PRIORITY</th>
-                                                    <th className="py-3 bg-white border-0 border-bottom text-muted">STATUS</th>
-                                                    <th className="py-3 bg-white border-0 border-bottom text-muted">DUE DATE</th>
-                                                    <th className="py-3 bg-white border-0 border-bottom text-muted">ASSIGNED TO</th>
-                                                    <th className="px-4 py-3 bg-white border-0 border-bottom text-muted text-end">ACTION</th>
+                                                    <th className="px-4 py-3 bg-body border border-secondary-subtle border-0 border-bottom text-muted">ID</th>
+                                                    <th className="py-3 bg-body border border-secondary-subtle border-0 border-bottom text-muted">TITLE</th>
+                                                    <th className="py-3 bg-body border border-secondary-subtle border-0 border-bottom text-muted">PRIORITY</th>
+                                                    <th className="py-3 bg-body border border-secondary-subtle border-0 border-bottom text-muted">STATUS</th>
+                                                    <th className="py-3 bg-body border border-secondary-subtle border-0 border-bottom text-muted">DUE DATE</th>
+                                                    <th className="py-3 bg-body border border-secondary-subtle border-0 border-bottom text-muted">ASSIGNED TO</th>
+                                                    <th className="px-4 py-3 bg-body border border-secondary-subtle border-0 border-bottom text-muted text-end">ACTION</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -287,7 +331,7 @@ const ProjectDetails = () => {
                                                                 #BUG-{bug._id.substring(bug._id.length - 3)}
                                                             </span>
                                                         </td>
-                                                        <td className="py-3 fw-semibold text-dark">{bug.title}</td>
+                                                        <td className="py-3 fw-semibold text-body">{bug.title}</td>
                                                         <td className="py-3">
                                                             <Badge bg="transparent" className={`badge-pill-custom ${getPriorityBadgeClass(bug.priority || 'Medium')}`}>
                                                                 {bug.priority || 'Medium'}
@@ -302,7 +346,7 @@ const ProjectDetails = () => {
                                                             <div className="d-flex flex-column">
                                                                 {bug.due_date ? (
                                                                     <>
-                                                                        <span className={`fw-medium ${isOverdue(bug.due_date) && bug.status !== 'Closed' && bug.status !== 'Resolved' ? 'text-danger fw-bold' : 'text-dark'}`} style={{ fontSize: '0.85rem' }}>
+                                                                        <span className={`fw-medium ${isOverdue(bug.due_date) && bug.status !== 'Closed' && bug.status !== 'Resolved' ? 'text-danger fw-bold' : 'text-body'}`} style={{ fontSize: '0.85rem' }}>
                                                                             {new Date(bug.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric'})}
                                                                         </span>
                                                                         {isOverdue(bug.due_date) && bug.status !== 'Closed' && bug.status !== 'Resolved' && (
@@ -318,7 +362,7 @@ const ProjectDetails = () => {
                                                                      <div className="rounded-circle d-flex justify-content-center align-items-center me-2 text-white bg-dark" style={{ width: '24px', height: '24px', fontSize: '0.7rem', fontWeight: 'bold' }}>
                                                                         {bug.assigned_to.username.charAt(0).toUpperCase()}
                                                                     </div>
-                                                                    <span className="text-dark fw-medium" style={{ fontSize: '0.85rem' }}>
+                                                                    <span className="text-body fw-medium" style={{ fontSize: '0.85rem' }}>
                                                                         {bug.assigned_to.username}
                                                                     </span>
                                                                 </div>

@@ -6,8 +6,12 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
+import cookieParser from 'cookie-parser';
 import connectDB from './shared/utils/db.js';
 import startCronJobs from './shared/utils/cronJobs.js';
+import { notFound, errorHandler } from './shared/middleware/error.middleware.js';
+import morgan from 'morgan';
+import { stream } from './shared/utils/logger.js';
 
 dotenv.config();
 
@@ -44,6 +48,10 @@ app.use(cors({
     credentials: true,
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('combined', { stream }));
+// Use a secret for signing cookies, ideally from .env
+app.use(cookieParser(process.env.COOKIE_SECRET || 'iqas_super_secret_cookie_key_2026'));
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -70,6 +78,10 @@ app.use('/api/reports', reportRoutes);
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Server is running', status: 'OK' });
 });
+
+// Error Handling Middleware
+app.use(notFound);
+app.use(errorHandler);
 
 // Start cron jobs
 startCronJobs(io);
