@@ -1,8 +1,7 @@
-import { body } from 'express-validator';
+import { z } from 'zod';
 
-export const addCommentValidation = [
-    body('comment_text')
-        .trim()
-        .notEmpty().withMessage('Comment text is required')
-        .isLength({ max: 2000 }).withMessage('Comment must not exceed 2000 characters'),
-];
+export const addCommentValidation = z.object({
+    comment_text: z.string().trim()
+        .min(1, { message: 'Comment text is required' })
+        .max(2000, { message: 'Comment must not exceed 2000 characters' }),
+});

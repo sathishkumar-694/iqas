@@ -1,21 +1,20 @@
-import { body } from 'express-validator';
+import { z } from 'zod';
 
-export const updateProfileValidation = [
-    body('username')
-        .optional()
-        .trim()
-        .isLength({ min: 3, max: 30 }).withMessage('Username must be between 3 and 30 characters'),
-    body('email')
-        .optional()
-        .trim()
-        .isEmail().withMessage('Please provide a valid email'),
-    body('password')
-        .optional()
-        .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-];
+export const updateProfileValidation = z.object({
+    username: z.string().trim()
+        .min(3, { message: 'Username must be between 3 and 30 characters' })
+        .max(30, { message: 'Username must be between 3 and 30 characters' })
+        .optional(),
+    email: z.string().trim()
+        .email({ message: 'Please provide a valid email' })
+        .optional(),
+    password: z.string()
+        .min(6, { message: 'Password must be at least 6 characters' })
+        .optional(),
+});
 
-export const updateRoleValidation = [
-    body('role')
-        .notEmpty().withMessage('Role is required')
-        .isIn(['Admin', 'TL', 'Dev', 'Tester']).withMessage('Invalid role'),
-];
+export const updateRoleValidation = z.object({
+    role: z.enum(['Admin', 'TL', 'Dev', 'Tester'], {
+        errorMap: () => ({ message: 'Invalid role' })
+    })
+});

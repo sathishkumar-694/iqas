@@ -36,14 +36,14 @@ const router = express.Router();
  *       200:
  *         description: A paginated list of projects
  */
-router.route('/').get(protect, getProjects).post(protect, authorize('Admin', 'TL'), createProjectValidation, validate, createProject);
+router.route('/').get(protect, getProjects).post(protect, authorize('Admin', 'TL'), validate(createProjectValidation), createProject);
 router
     .route('/:id')
     .get(protect, getProjectById)
     .put(protect, authorize('Admin'), updateProject)
     .delete(protect, authorize('Admin'), deleteProject);
 
-router.route('/:id/members').put(protect, authorize('Admin', 'TL'), assignMemberValidation, validate, assignTeamMember);
+router.route('/:id/members').put(protect, authorize('Admin', 'TL'), validate(assignMemberValidation), assignTeamMember);
 router.route('/:id/members/:userId').delete(protect, authorize('Admin', 'TL'), removeTeamMember);
 
 export default router;

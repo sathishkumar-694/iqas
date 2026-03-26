@@ -1,5 +1,6 @@
 import User from './user.model.js';
 import asyncHandler from 'express-async-handler';
+import cloudinary from '../../config/cloudinary.js';
 
 const getUsers = asyncHandler(async (req, res) => {
     const query = req.query.role ? { role: req.query.role } : {};
@@ -25,11 +26,45 @@ const updateUserProfile = asyncHandler(async (req, res) => {
             username: updatedUser.username,
             email: updatedUser.email,
             role: updatedUser.role,
+            avatar: updatedUser.avatar,
         });
     } else {
         res.status(404);
         throw new Error('User not found');
     }
+});
+
+const uploadAvatar = asyncHandler(async (req, res) => {
+    if (!req.file) {
+        res.status(400);
+        throw new Error('Please upload an image file');
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    // Delete old avatar if exists
+    if (user.avatar_cloudinary_id) {
+        try {
+            await cloudinary.uploader.destroy(user.avatar_cloudinary_id);
+        } catch (error) {
+            console.error('Failed to delete old avatar:', error);
+        }
+    }
+
+    user.avatar = req.file.path;
+    user.avatar_cloudinary_id = req.file.filename;
+    
+    await user.save();
+
+    res.json({
+        _id: user._id,
+        avatar: user.avatar,
+        message: 'Avatar updated successfully'
+    });
 });
 
 const adminResetUserPassword = asyncHandler(async (req, res) => {
@@ -79,4 +114,4 @@ const updateUserRole = asyncHandler(async (req, res) => {
     }
 });
 
-export { getUsers, updateUserProfile, adminResetUserPassword, deleteUser, updateUserRole };
+export { getUsers, updateUserProfile, adminResetUserPassword, deleteUser, updateUserRole, uploadAvatar };

@@ -12,10 +12,9 @@ const NotificationDropdown = () => {
 
     const fetchNotifications = async () => {
         try {
-            const config = {
-                headers: { Authorization: `Bearer ${user.token}` },
-            };
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/notifications`, config);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/notifications`, {
+                withCredentials: true,
+            });
             setNotifications(res.data);
             setUnreadCount(res.data.filter(n => !n.is_read).length);
         } catch (error) {
@@ -43,10 +42,9 @@ const NotificationDropdown = () => {
 
     const markAsRead = async (id) => {
         try {
-            const config = {
-                headers: { Authorization: `Bearer ${user.token}` },
-            };
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/notifications/${id}/read`, {}, config);
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/notifications/${id}/read`, {}, {
+                withCredentials: true,
+            });
             
             // Update local state to instantly remove the "unread" status
             setNotifications(notifications.map(n => 
@@ -106,3 +104,4 @@ const NotificationDropdown = () => {
 };
 
 export default NotificationDropdown;
+

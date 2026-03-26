@@ -1,3 +1,5 @@
+import dotenv from "dotenv"
+dotenv.config();
 const notFound = (req, res, next) => {
     const error = new Error(`Not Found - ${req.originalUrl}`);
     res.status(404);
@@ -14,9 +16,18 @@ const errorHandler = (err, req, res, next) => {
         message = 'Resource not found';
     }
 
+    // Remove file path locations from the message to prevent exposing internal paths
+    if (message && message.includes('ENOENT')) {
+        message = 'File system error occurred. Cannot find the specified directory or file.';
+    } else if (message) {
+        // Strip out anything that looks like a drive letter and path (e.g., C:\Users\...)
+        message = message.replace(/[A-Za-z]:\\[\w\\\-\.]+/, '[REDACTED PATH]');
+        // Strip out anything that looks like a linux path (e.g., /home/user/...)
+        message = message.replace(/(?:\/[\w\.\-]+)+/, '[REDACTED PATH]');
+    }
+
     res.status(statusCode).json({
         message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
     });
 };
 

@@ -118,7 +118,13 @@ const updateBug = asyncHandler(async (req, res) => {
 
         const oldStatus = bug.status;
 
-        const isTryingToEditCore = req.body.title || req.body.description || req.body.priority || req.body.os || req.body.browser || req.body.device;
+        const isTryingToEditCore = 
+            (req.body.title && req.body.title !== bug.title) || 
+            (req.body.description !== undefined && req.body.description !== bug.description) || 
+            (req.body.priority && req.body.priority !== bug.priority) || 
+            (req.body.os !== undefined && req.body.os !== bug.os) || 
+            (req.body.browser !== undefined && req.body.browser !== bug.browser) || 
+            (req.body.device !== undefined && req.body.device !== bug.device);
         
         if (isTryingToEditCore) {
             if (req.user.role !== 'Admin' && req.user.role !== 'TL' && req.user._id.toString() !== bug.reported_by.toString()) {
@@ -126,9 +132,9 @@ const updateBug = asyncHandler(async (req, res) => {
                 throw new Error('Developers cannot change the title, description, priority, or environment specs.');
             }
             
-            bug.title = req.body.title || bug.title;
-            bug.description = req.body.description || bug.description;
-            bug.priority = req.body.priority || bug.priority;
+            if (req.body.title) bug.title = req.body.title;
+            if (req.body.description !== undefined) bug.description = req.body.description;
+            if (req.body.priority) bug.priority = req.body.priority;
             if (req.body.os !== undefined) bug.os = req.body.os;
             if (req.body.browser !== undefined) bug.browser = req.body.browser;
             if (req.body.device !== undefined) bug.device = req.body.device;
@@ -149,6 +155,15 @@ const updateBug = asyncHandler(async (req, res) => {
                 throw new Error('Testers can only Reopen or Close bugs.');
             }
             
+            // Automatically push due date 7 days into the future if reopening an old bug
+            if ((oldStatus === 'Closed' || oldStatus === 'Resolved') && 
+                (req.body.status === 'Open' || req.body.status === 'In Progress') && 
+                !req.body.dueDate) {
+                const futureDate = new Date();
+                futureDate.setDate(futureDate.getDate() + 7);
+                bug.due_date = futureDate;
+            }
+
             bug.status = req.body.status;
         }
 

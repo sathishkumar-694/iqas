@@ -2,15 +2,16 @@ import multer from 'multer';
 import path from 'path';
 import Attachment from '../../shared/models/attachment.model.js';
 import asyncHandler from 'express-async-handler';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from '../../config/cloudinary.js';
 
-// Configure multer storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+// Configure multer storage with Cloudinary
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'iqas-attachments',
+        // allow various resource types since attachments can be pdf, zip, etc (if cloudinary supports it)
+        resource_type: 'auto',
     },
 });
 
@@ -49,7 +50,8 @@ const uploadAttachment = asyncHandler(async (req, res) => {
     const attachment = await Attachment.create({
         bug_id: req.params.bugId,
         file_name: req.file.originalname,
-        file_url: `/uploads/${req.file.filename}`,
+        file_url: req.file.path,
+        cloudinary_id: req.file.filename,
         uploaded_by: req.user._id,
     });
 
@@ -69,6 +71,15 @@ const deleteAttachment = asyncHandler(async (req, res) => {
     if (attachment.uploaded_by.toString() !== req.user._id.toString() && req.user.role !== 'Admin') {
         res.status(403);
         throw new Error('Not authorized to delete this attachment');
+    }
+
+    // Remove from Cloudinary if cloudinary_id exists
+    if (attachment.cloudinary_id) {
+        try {
+            await cloudinary.uploader.destroy(attachment.cloudinary_id);
+        } catch (error) {
+            console.error('Failed to delete attachment from Cloudinary:', error);
+        }
     }
 
     await attachment.deleteOne();

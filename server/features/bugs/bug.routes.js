@@ -14,13 +14,13 @@ import validate from '../../shared/middleware/validate.middleware.js';
 
 const router = express.Router();
 
-router.route('/').post(protect, createBugValidation, validate, createBug);
+router.route('/').post(protect, validate(createBugValidation), createBug);
 router.route('/bulk').put(protect, authorize('Admin', 'TL'), bulkUpdateBugs);
 router.route('/project/:projectId').get(protect, getBugsByProject);
 router
     .route('/:id')
     .get(protect, getBugById)
-    .put(protect, updateBugValidation, validate, updateBug)
+    .put(protect, validate(updateBugValidation), updateBug)
     .delete(protect, authorize('Admin'), deleteBug);
 router.route('/:id/activity').get(protect, getBugActivity);
 

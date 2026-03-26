@@ -3,7 +3,7 @@ import { Modal, Button, Form } from 'react-bootstrap';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
 
-const CreateProjectModal = ({ show, handleClose, onProjectCreated }) => {
+const CreateProjectModal = ({ show, onHide, onCreated }) => {
     const { user } = useContext(AuthContext);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -11,23 +11,17 @@ const CreateProjectModal = ({ show, handleClose, onProjectCreated }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                },
-            };
-
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/projects`, {
                 name,
                 description,
-            }, config);
+            }, { withCredentials: true });
 
             // Reset form
             setName('');
             setDescription('');
             
-            onProjectCreated(res.data);
-            handleClose();
+            if (onCreated) onCreated(res.data);
+            onHide();
         } catch (error) {
             console.error('Error creating project:', error);
             alert(error.response?.data?.message || 'Error creating project');
@@ -35,7 +29,7 @@ const CreateProjectModal = ({ show, handleClose, onProjectCreated }) => {
     };
 
     return (
-        <Modal show={show} onHide={handleClose}>
+        <Modal show={show} onHide={onHide}>
             <Modal.Header closeButton>
                 <Modal.Title>Create New Project</Modal.Title>
             </Modal.Header>
@@ -73,3 +67,4 @@ const CreateProjectModal = ({ show, handleClose, onProjectCreated }) => {
 };
 
 export default CreateProjectModal;
+

@@ -23,6 +23,14 @@ const userSchema = mongoose.Schema({
         enum: ['Admin', 'TL', 'Dev', 'Tester'],
         default: 'Tester',
     },
+    avatar: {
+        type: String,
+        default: '',
+    },
+    avatar_cloudinary_id: {
+        type: String,
+        default: '',
+    },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
 }, {

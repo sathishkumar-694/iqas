@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import User from '../users/user.model.js';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import asyncHandler from 'express-async-handler';
 import Redis from 'ioredis';
 
@@ -59,8 +59,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
     // Use .select('+password') because we configured select: false on the schema
     const user = await User.findOne({ email }).select('+password');
+    const emailId = user ? user.email : "dummy@gmail.com";
+    
+    // Always run the password check or a dummy match to prevent timing attacks
+    const isMatch = user ? await user.matchPassword(password) : false;
 
-    if (user && (await user.matchPassword(password))) {
+    // Secure checking
+    if (user && isMatch) {
         // Remove password before sending to the client logic manually
         user.password = undefined;
 
@@ -226,24 +231,22 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
-    if (process.env.SMTP_HOST) {
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
+    if (process.env.RESEND_API_KEY) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
 
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM || 'noreply@iqas.com',
-            to: user.email,
-            subject: 'IQAS - Password Reset Request',
-            html: `<h3>Password Reset</h3><p>Click the link below to reset your password. This link expires in 30 minutes.</p><a href="${resetUrl}">${resetUrl}</a>`,
-        });
-
-        res.json({ message: 'Password reset email sent' });
+        try {
+            await resend.emails.send({
+                from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+                to: user.email,
+                subject: 'IQAS - Password Reset Request',
+                html: `<h3>Password Reset</h3><p>Click the link below to reset your password. This link expires in 30 minutes.</p><a href="${resetUrl}">${resetUrl}</a>`,
+            });
+            res.json({ message: 'Password reset email sent' });
+        } catch (error) {
+            console.error('Resend error:', error);
+            res.status(500);
+            throw new Error('Failed to send password reset email');
+        }
     } else {
         console.log(`[DEV] Password reset link: ${resetUrl}`);
         res.json({ message: 'Password reset link generated (check server console in dev mode)', resetUrl });

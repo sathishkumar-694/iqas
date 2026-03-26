@@ -19,7 +19,6 @@ connectDB();
 
 const app = express();
 const server = http.createServer(app);
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -53,8 +52,8 @@ app.use(morgan('combined', { stream }));
 // Use a secret for signing cookies, ideally from .env
 app.use(cookieParser(process.env.COOKIE_SECRET || 'iqas_super_secret_cookie_key_2026'));
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files statically (DEPRECATED - moved to Cloudinary)
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Feature routes
 import authRoutes from './features/auth/auth.routes.js';

@@ -6,6 +6,6 @@ import validate from '../../shared/middleware/validate.middleware.js';
 
 const router = express.Router();
 
-router.route('/:bugId').get(protect, getCommentsByBug).post(protect, addCommentValidation, validate, addComment);
+router.route('/:bugId').get(protect, getCommentsByBug).post(protect, validate(addCommentValidation), addComment);
 
 export default router;

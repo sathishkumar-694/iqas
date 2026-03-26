@@ -101,20 +101,35 @@ const Navigation = () => {
 
                             <Dropdown.Divider />
                             
-                            {/* Theme Switch exactly as requested inside dropdown */}
-                            <div className="px-3 py-2 d-flex justify-content-between align-items-center" onClick={toggleTheme} style={{ cursor: 'pointer' }}>
-                                <div className="d-flex align-items-center">
-                                    {isDarkMode ? <Moon size={16} className="me-2 text-warning" /> : <Sun size={16} className="me-2 text-warning" />}
-                                    <span className="fw-medium" style={{ fontSize: '0.9rem' }}>Dark Mode</span>
+                            {/* Theme Switch (Small and Neat) */}
+                            <div className="px-3 py-2 d-flex justify-content-between align-items-center" onClick={(e) => { e.stopPropagation(); toggleTheme(); }} style={{ cursor: 'pointer' }}>
+                                <span className="fw-medium" style={{ fontSize: '0.9rem' }}>Theme</span>
+                                <div 
+                                    className="rounded-pill d-flex align-items-center position-relative" 
+                                    style={{
+                                        width: '46px',
+                                        height: '24px',
+                                        backgroundColor: isDarkMode ? '#343a40' : '#e9ecef',
+                                        transition: 'background-color 0.3s ease',
+                                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                                    }}
+                                >
+                                    <Sun size={12} className="position-absolute" style={{ left: '6px', color: '#adb5bd' }} />
+                                    <Moon size={12} className="position-absolute" style={{ right: '6px', color: '#6c757d' }} />
+                                    
+                                    <div 
+                                        className="rounded-circle bg-white shadow-sm position-absolute d-flex justify-content-center align-items-center"
+                                        style={{
+                                            width: '18px',
+                                            height: '18px',
+                                            left: isDarkMode ? '25px' : '3px',
+                                            transition: 'left 0.3s ease',
+                                            zIndex: 2
+                                        }}
+                                    >
+                                        {isDarkMode ? <Moon size={12} className="text-dark" strokeWidth={2.5} /> : <Sun size={12} className="text-warning" strokeWidth={2.5} />}
+                                    </div>
                                 </div>
-                                <Form.Check 
-                                    type="switch"
-                                    id="theme-switch"
-                                    checked={isDarkMode}
-                                    onChange={toggleTheme}
-                                    className="m-0"
-                                    onClick={(e) => e.stopPropagation()}
-                                />
                             </div>
 
                             <Dropdown.Divider />

@@ -20,7 +20,7 @@ const KanbanBoard = () => {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                const config = { withCredentials: true };
                 const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects`, config);
                 const projectList = res.data.data || res.data;
                 setProjects(projectList);
@@ -40,7 +40,7 @@ const KanbanBoard = () => {
         if (!selectedProject) return;
         const fetchBugs = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                const config = { withCredentials: true };
                 const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/project/${selectedProject}?limit=100`, config);
                 setBugs(res.data.data || res.data);
             } catch (error) {
@@ -52,7 +52,7 @@ const KanbanBoard = () => {
 
     const handleStatusChange = async (bugId, newStatus) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${bugId}`, { status: newStatus }, config);
             setBugs(bugs.map(b => b._id === bugId ? { ...b, status: newStatus } : b));
         } catch (error) {

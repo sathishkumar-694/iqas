@@ -16,12 +16,6 @@ const ReportBugModal = ({ show, handleClose, projectId }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                },
-            };
-
             await axios.post(`${import.meta.env.VITE_API_URL}/api/bugs`, {
                 title,
                 description,
@@ -31,7 +25,7 @@ const ReportBugModal = ({ show, handleClose, projectId }) => {
                 os,
                 browser,
                 device
-            }, config);
+            }, { withCredentials: true });
 
             // Reset form
             setTitle('');

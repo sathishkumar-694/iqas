@@ -22,7 +22,7 @@ const ProjectDetails = () => {
     useEffect(() => {
         const fetchProjectData = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                const config = { withCredentials: true };
                 const projectRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects/${id}`, config);
 
                 setProject(projectRes.data);
@@ -87,7 +87,7 @@ const ProjectDetails = () => {
 
     const handleAssignMember = async (userId) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/projects/${id}/members`, { userId }, config);
             
             // Move from available to assigned locally
@@ -102,7 +102,7 @@ const ProjectDetails = () => {
 
     const handleRemoveMember = async (userId) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.delete(`${import.meta.env.VITE_API_URL}/api/projects/${id}/members/${userId}`, config);
             
             // Move from assigned to available locally

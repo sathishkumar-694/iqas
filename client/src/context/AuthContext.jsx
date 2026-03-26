@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
             // failed to logout cleanly, fallback state triggered
         }
         setUser(null);
-        toast.info('Logged out safely');
+        toast.info('Logged out successfully');
     };
 
     return (

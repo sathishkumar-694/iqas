@@ -18,8 +18,7 @@ const Dashboard = () => {
 
     const fetchProjects = async (searchTerm = '', pageNum = 1) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects?search=${searchTerm}&page=${pageNum}&limit=12`, config);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects?search=${searchTerm}&page=${pageNum}&limit=12`, { withCredentials: true });
             setProjects(res.data.data || res.data);
             if (res.data.pagination) setPagination(res.data.pagination);
             setLoading(false);

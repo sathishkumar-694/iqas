@@ -21,17 +21,13 @@ const ProfileSettings = () => {
         setError(null);
 
         try {
-            const config = {
-                headers: { Authorization: `Bearer ${user.token}` },
-            };
-            
             const payload = { username, email };
             if (password) payload.password = password;
 
-            const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/profile`, payload, config);
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/profile`, payload, { withCredentials: true });
             
-            // Re-login to update the context (token stays the same technically)
-            login({ ...res.data, token: user.token });
+            // Re-login to update the context
+            login(res.data);
             
             setMessage('Profile updated successfully!');
             setPassword(''); // clear password field

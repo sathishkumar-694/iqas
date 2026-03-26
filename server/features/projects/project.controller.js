@@ -10,6 +10,7 @@ const getProjects = asyncHandler(async (req, res) => {
         query.team_members = req.user._id;
     } else if (req.user.role === 'TL') {
         query.$or = [
+            { created_by: req.user._id },
             { project_head: req.user._id },
             { team_members: req.user._id }
         ];
@@ -67,11 +68,18 @@ const createProject = asyncHandler(async (req, res) => {
         throw new Error('Please add a project name');
     }
 
-    const project = await Project.create({
+    const projectData = {
         name,
         description,
         created_by: req.user._id,
-    });
+    };
+
+    // Auto-assign the TL as project_head so it appears in their dashboard
+    if (req.user.role === 'TL') {
+        projectData.project_head = req.user._id;
+    }
+
+    const project = await Project.create(projectData);
 
     res.status(201).json(project);
 });

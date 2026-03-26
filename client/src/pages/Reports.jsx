@@ -15,8 +15,7 @@ const Reports = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
-                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports/dashboard`, config);
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports/dashboard`, { withCredentials: true });
                 setStats(res.data);
             } catch (error) {
                 console.error('Error fetching reports:', error);
@@ -29,11 +28,10 @@ const Reports = () => {
 
     const handleExportCSV = async () => {
         try {
-            const config = {
-                headers: { Authorization: `Bearer ${user.token}` },
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports/export`, {
+                withCredentials: true,
                 responseType: 'blob',
-            };
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports/export`, config);
+            });
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const link = document.createElement('a');
             link.href = url;

@@ -19,13 +19,14 @@ const BugDetails = () => {
     const [newComment, setNewComment] = useState('');
     const [activity, setActivity] = useState([]);
     const [attachments, setAttachments] = useState([]);
+    const [selectedFile, setSelectedFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                const config = { withCredentials: true };
                 const bugRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, config);
                 setBug(bugRes.data);
                 setStatus(bugRes.data.status);
@@ -54,7 +55,7 @@ const BugDetails = () => {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, { status: newStatus }, config);
             setStatus(newStatus);
         } catch (error) {
@@ -65,7 +66,7 @@ const BugDetails = () => {
 
     const handleAssigneeChange = async (newAssignee) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, { assignedTo: newAssignee }, config);
             setBug({ ...bug, assigned_to: { ...bug.assigned_to, _id: newAssignee } });
             window.location.reload();
@@ -79,7 +80,7 @@ const BugDetails = () => {
         e.preventDefault();
         if (!newComment.trim()) return;
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, { comment_text: newComment }, config);
             setComments([res.data, ...comments]);
             setNewComment('');
@@ -88,19 +89,24 @@ const BugDetails = () => {
         }
     };
 
-    const handleFileUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    const handleFileUpload = async () => {
+        if (!selectedFile) return;
         setUploading(true);
         try {
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', selectedFile);
             
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/attachments/bug/${id}`, formData);
+            const config = { withCredentials: true };
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/attachments/bug/${id}`, formData, config);
             setAttachments([res.data, ...attachments]);
+            setSelectedFile(null);
+            
+            // Reset the file input element manually
+            const fileInput = document.getElementById('attachment-upload');
+            if (fileInput) fileInput.value = '';
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('File upload failed.');
+            alert('File upload failed. ' + (error.response?.data?.message || ''));
         } finally {
             setUploading(false);
         }
@@ -109,7 +115,7 @@ const BugDetails = () => {
     const handleDeleteAttachment = async (attachId) => {
         if (!window.confirm('Delete this attachment?')) return;
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.delete(`${import.meta.env.VITE_API_URL}/api/attachments/${attachId}`, config);
             setAttachments(attachments.filter(a => a._id !== attachId));
         } catch (error) {
@@ -166,9 +172,22 @@ const BugDetails = () => {
                     <Card className="border-0 shadow-sm mb-3">
                         <Card.Body>
                             <h5><Paperclip size={18} className="me-2" />Attachments ({attachments.length})</h5>
-                            <Form.Group className="mb-3">
-                                <Form.Control type="file" onChange={handleFileUpload} disabled={uploading} />
-                                {uploading && <small className="text-muted">Uploading...</small>}
+                            <Form.Group className="mb-3 d-flex gap-2 align-items-center">
+                                <Form.Control 
+                                    id="attachment-upload"
+                                    type="file" 
+                                    onChange={(e) => setSelectedFile(e.target.files[0])} 
+                                    disabled={uploading} 
+                                />
+                                <Button 
+                                    variant="outline-primary" 
+                                    size="sm" 
+                                    onClick={handleFileUpload} 
+                                    disabled={!selectedFile || uploading}
+                                    style={{ whiteSpace: 'nowrap', height: '100%', padding: '0.375rem 0.75rem' }}
+                                >
+                                    {uploading ? 'Uploading...' : 'Upload File'}
+                                </Button>
                             </Form.Group>
                             {attachments.length > 0 ? (
                                 <ListGroup variant="flush">

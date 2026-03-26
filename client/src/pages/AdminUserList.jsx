@@ -18,7 +18,7 @@ const AdminUserList = () => {
 
     const fetchUsers = async () => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`, config);
             setUsers(res.data);
             setLoading(false);
@@ -42,7 +42,7 @@ const AdminUserList = () => {
     const handleResetPassword = async (userId, username) => {
         if (!window.confirm(`Are you sure you want to reset password for ${username}?`)) return;
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${userId}/reset-password`, {}, config);
             toast.success(`Password for ${username} reset successfully`);
         } catch (error) {
@@ -52,7 +52,7 @@ const AdminUserList = () => {
 
     const handleRoleChange = async (userId, newRole) => {
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${userId}/role`, { role: newRole }, config);
             setUsers(users.map(u => u._id === userId ? { ...u, role: newRole } : u));
             toast.success('Role updated successfully');
@@ -64,7 +64,7 @@ const AdminUserList = () => {
     const handleDeleteUser = async (userId, username) => {
         if (!window.confirm(`CRITICAL WARNING: Remove ${username} from the system?`)) return;
         try {
-            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const config = { withCredentials: true };
             await axios.delete(`${import.meta.env.VITE_API_URL}/api/users/${userId}`, config);
             setUsers(users.filter(u => u._id !== userId));
             toast.success('User deleted successfully');
@@ -157,6 +157,7 @@ const AdminUserList = () => {
                                                 Supreme Admin
                                             </Badge>
                                         ) : (
+                                        
                                             <Form.Select 
                                                 size="sm"
                                                 value={u.role}
