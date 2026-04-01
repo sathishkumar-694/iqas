@@ -70,6 +70,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
 const adminResetUserPassword = asyncHandler(async (req, res) => {
     const user = await User.findById(req.params.id);
 
+
     if (user) {
         const resetPassword = process.env.DEFAULT_RESET_PASSWORD || 'iqas_reset_123';
         user.password = resetPassword;

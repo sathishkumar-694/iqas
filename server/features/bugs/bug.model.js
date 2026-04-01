@@ -37,18 +37,7 @@ const bugSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
-    os: {
-        type: String,
-        trim: true,
-    },
-    browser: {
-        type: String,
-        trim: true,
-    },
-    device: {
-        type: String,
-        trim: true,
-    },
+
     due_date: {
         type: Date,
     },

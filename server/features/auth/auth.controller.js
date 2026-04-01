@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import User from '../users/user.model.js';
 import jwt from 'jsonwebtoken';
 import { Resend } from 'resend';
+import { sendWelcomeEmail } from '../../shared/utils/emailService.js';
 import asyncHandler from 'express-async-handler';
 import Redis from 'ioredis';
 
@@ -113,6 +114,7 @@ const registerUser = asyncHandler(async (req, res) => {
         const refreshToken = generateRefreshToken(user._id);
         
         setCookies(res, accessToken, refreshToken);
+        sendWelcomeEmail(user);
 
         res.status(201).json({
             _id: user._id,
@@ -129,8 +131,8 @@ const registerUser = asyncHandler(async (req, res) => {
 const adminLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    const envAdminEmail = process.env.ADMIN_EMAIL || 'admin@iqas.com';
-    const envAdminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const envAdminEmail = process.env.ADMIN_EMAIL;
+    const envAdminPassword = process.env.ADMIN_PASSWORD;
 
     if (email === envAdminEmail && password === envAdminPassword) {
         // Use .select('+password') because we configured select: false on the schema
@@ -229,7 +231,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
     user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
     await user.save();
 
-    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    const origin = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${origin}/reset-password/${resetToken}`;
 
     if (process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);

@@ -15,6 +15,7 @@ const storage = new CloudinaryStorage({
     },
 });
 
+
 const fileFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|log|csv|zip/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());

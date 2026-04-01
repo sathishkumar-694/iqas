@@ -1,4 +1,6 @@
 import Project from './project.model.js';
+import User from '../users/user.model.js';
+import { sendProjectInviteEmail } from '../../shared/utils/emailService.js';
 import asyncHandler from 'express-async-handler';
 
 // GET /api/projects?search=&page=&limit=
@@ -79,6 +81,9 @@ const createProject = asyncHandler(async (req, res) => {
         projectData.project_head = req.user._id;
     }
 
+    // Automatically add the creator as a team member
+    projectData.team_members = [req.user._id];
+
     const project = await Project.create(projectData);
 
     res.status(201).json(project);
@@ -123,6 +128,12 @@ const assignTeamMember = asyncHandler(async (req, res) => {
     if (!project.team_members.includes(userId)) {
         project.team_members.push(userId);
         await project.save();
+        
+        const addedUser = await User.findById(userId);
+        if (addedUser) {
+            const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+            sendProjectInviteEmail(addedUser, project.name, clientUrl);
+        }
     }
     
     res.json(project);

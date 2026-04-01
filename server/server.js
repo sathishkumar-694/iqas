@@ -1,3 +1,4 @@
+import 'newrelic';
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -13,6 +14,7 @@ import { notFound, errorHandler } from './shared/middleware/error.middleware.js'
 import morgan from 'morgan';
 import { stream } from './shared/utils/logger.js';
 
+
 dotenv.config();
 
 connectDB();
@@ -24,11 +26,11 @@ const __dirname = path.dirname(__filename);
 
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
-        methods: ['GET', 'POST', 'PUT', 'DELETE']
+        origin: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        credentials: true
     }
 });
-
 app.set('io', io);
 
 io.on('connection', (socket) => {
@@ -43,19 +45,13 @@ io.on('connection', (socket) => {
 // Security & parsing middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: true,
     credentials: true,
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('combined', { stream }));
-// Use a secret for signing cookies, ideally from .env
-app.use(cookieParser(process.env.COOKIE_SECRET || 'iqas_super_secret_cookie_key_2026'));
-
-// Serve uploaded files statically (DEPRECATED - moved to Cloudinary)
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Feature routes
+// app.use(morgan('combined', { stream }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 import authRoutes from './features/auth/auth.routes.js';
 import projectRoutes from './features/projects/project.routes.js';
 import bugRoutes from './features/bugs/bug.routes.js';

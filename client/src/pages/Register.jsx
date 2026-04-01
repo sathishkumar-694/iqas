@@ -7,7 +7,7 @@ const Register = () => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('Tester');
+    const [role, setRole] = useState('');
     const [error, setError] = useState('');
     const { register, user } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -73,7 +73,8 @@ const Register = () => {
 
                                 <Form.Group className="mb-3" controlId="formGridRole">
                                     <Form.Label>Role</Form.Label>
-                                    <Form.Select value={role} onChange={(e) => setRole(e.target.value)}>
+                                    <Form.Select value={role} onChange={(e) => setRole(e.target.value)} required>
+                                        <option value="" disabled>-</option>
                                         <option value="Tester">Tester</option>
                                         <option value="Dev">Developer</option>
                                         <option value="TL">Team Lead (TL)</option>

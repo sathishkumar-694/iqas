@@ -24,7 +24,7 @@ const Auth = () => {
     const [regUsername, setRegUsername] = useState('');
     const [regEmail, setRegEmail] = useState('');
     const [regPassword, setRegPassword] = useState('');
-    const [regRole, setRegRole] = useState('Tester');
+    const [regRole, setRegRole] = useState('');
 
     useEffect(() => {
         if (user) {
@@ -182,7 +182,9 @@ const Auth = () => {
                                                         className="py-2"
                                                         style={{ fontSize: '0.9rem', paddingLeft: '35px' }}
                                                         tabIndex={!isRegistering ? -1 : 0}
+                                                        required
                                                     >
+                                                        <option value="" disabled>-</option>
                                                         <option value="Tester">Tester</option>
                                                         <option value="Dev">Developer</option>
                                                         <option value="TL">Lead</option>

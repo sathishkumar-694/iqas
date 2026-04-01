@@ -68,7 +68,6 @@ const BugDetails = () => {
         try {
             const config = { withCredentials: true };
             await axios.put(`${import.meta.env.VITE_API_URL}/api/bugs/${id}`, { assignedTo: newAssignee }, config);
-            setBug({ ...bug, assigned_to: { ...bug.assigned_to, _id: newAssignee } });
             window.location.reload();
         } catch (error) {
             console.error('Error assigning:', error);
@@ -153,67 +152,15 @@ const BugDetails = () => {
                                 </div>
                             )}
 
-                            {(bug.os || bug.browser || bug.device) && (
-                                <div className="mt-3">
-                                    <h6>Environment</h6>
-                                    <Table size="sm" bordered>
-                                        <tbody>
-                                            {bug.os && <tr><td><strong>OS</strong></td><td>{bug.os}</td></tr>}
-                                            {bug.browser && <tr><td><strong>Browser</strong></td><td>{bug.browser}</td></tr>}
-                                            {bug.device && <tr><td><strong>Device</strong></td><td>{bug.device}</td></tr>}
-                                        </tbody>
-                                    </Table>
-                                </div>
-                            )}
                         </Card.Body>
                     </Card>
 
-                    {/* Attachments */}
+                    {/* Comments and Attachments */}
                     <Card className="border-0 shadow-sm mb-3">
                         <Card.Body>
-                            <h5><Paperclip size={18} className="me-2" />Attachments ({attachments.length})</h5>
-                            <Form.Group className="mb-3 d-flex gap-2 align-items-center">
-                                <Form.Control 
-                                    id="attachment-upload"
-                                    type="file" 
-                                    onChange={(e) => setSelectedFile(e.target.files[0])} 
-                                    disabled={uploading} 
-                                />
-                                <Button 
-                                    variant="outline-primary" 
-                                    size="sm" 
-                                    onClick={handleFileUpload} 
-                                    disabled={!selectedFile || uploading}
-                                    style={{ whiteSpace: 'nowrap', height: '100%', padding: '0.375rem 0.75rem' }}
-                                >
-                                    {uploading ? 'Uploading...' : 'Upload File'}
-                                </Button>
-                            </Form.Group>
-                            {attachments.length > 0 ? (
-                                <ListGroup variant="flush">
-                                    {attachments.map(att => (
-                                        <ListGroup.Item key={att._id} className="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <a href={`${import.meta.env.VITE_API_URL}${att.file_url}`} target="_blank" rel="noopener noreferrer">
-                                                    📎 {att.file_name}
-                                                </a>
-                                                <small className="text-muted ms-2">by {att.uploaded_by?.username}</small>
-                                            </div>
-                                            {(att.uploaded_by?._id === user._id || user.role === 'Admin') && (
-                                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteAttachment(att._id)}>✕</Button>
-                                            )}
-                                        </ListGroup.Item>
-                                    ))}
-                                </ListGroup>
-                            ) : <p className="text-muted small">No attachments yet.</p>}
-                        </Card.Body>
-                    </Card>
-
-                    {/* Comments */}
-                    <Card className="border-0 shadow-sm mb-3">
-                        <Card.Body>
-                            <h5><MessageSquare size={18} className="me-2" />Comments ({comments.length})</h5>
-                            <Form onSubmit={handleCommentSubmit} className="mb-3">
+                            <h5><MessageSquare size={18} className="me-2" />Discussion & Files</h5>
+                            
+                            <Form onSubmit={handleCommentSubmit} className="mb-4">
                                 <Form.Control
                                     as="textarea"
                                     rows={3}
@@ -221,15 +168,68 @@ const BugDetails = () => {
                                     value={newComment}
                                     onChange={(e) => setNewComment(e.target.value)}
                                 />
-                                <Button type="submit" variant="primary" size="sm" className="mt-2">Post Comment</Button>
-                            </Form>
-                            {comments.map(c => (
-                                <div key={c._id} className="border-bottom py-2">
-                                    <strong>{c.user_id?.username}</strong>
-                                    <small className="text-muted ms-2">{new Date(c.created_at).toLocaleString()}</small>
-                                    <p className="mb-0 mt-1">{c.comment_text}</p>
+                                <div className="d-flex justify-content-between align-items-center mt-2">
+                                    <Form.Group className="d-flex gap-2 align-items-center m-0">
+                                        <Form.Control 
+                                            id="attachment-upload"
+                                            type="file" 
+                                            size="sm"
+                                            onChange={(e) => setSelectedFile(e.target.files[0])} 
+                                            disabled={uploading} 
+                                            style={{ maxWidth: '250px' }}
+                                        />
+                                        <Button 
+                                            variant="outline-secondary" 
+                                            size="sm" 
+                                            onClick={handleFileUpload} 
+                                            disabled={!selectedFile || uploading}
+                                        >
+                                            <Paperclip size={14} className="me-1" />
+                                            {uploading ? 'Uploading...' : 'Upload'}
+                                        </Button>
+                                    </Form.Group>
+                                    <Button type="submit" variant="primary" size="sm" disabled={uploading}>Post Comment</Button>
                                 </div>
-                            ))}
+                            </Form>
+
+                            {/* List Attachments & Comments Together as timeline stream */}
+                            <div className="d-flex flex-column gap-3">
+                                {attachments.length > 0 && (
+                                    <div className="p-3 bg-light rounded">
+                                        <h6 className="mb-2 text-muted fw-bold" style={{ fontSize: '0.85rem' }}>Attached Files</h6>
+                                        <ListGroup variant="flush">
+                                            {attachments.map(att => (
+                                                <ListGroup.Item key={att._id} className="d-flex justify-content-between align-items-center bg-transparent px-0 py-1 border-0">
+                                                    <div>
+                                                        <a href={`${import.meta.env.VITE_API_URL}${att.file_url}`} target="_blank" rel="noopener noreferrer" className="text-decoration-none fw-medium">
+                                                            📎 {att.file_name}
+                                                        </a>
+                                                        <small className="text-muted ms-2">by {att.uploaded_by?.username}</small>
+                                                    </div>
+                                                    {(att.uploaded_by?._id === user._id || user.role === 'Admin') && (
+                                                        <Button variant="link" className="text-danger p-0 ms-2" style={{ textDecoration: 'none' }} onClick={() => handleDeleteAttachment(att._id)}>✕</Button>
+                                                    )}
+                                                </ListGroup.Item>
+                                            ))}
+                                        </ListGroup>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <h6 className="mb-2 text-muted fw-bold" style={{ fontSize: '0.85rem' }}>Comments ({comments.length})</h6>
+                                    {comments.length === 0 ? (
+                                        <p className="text-muted small">No comments yet.</p>
+                                    ) : (
+                                        comments.map(c => (
+                                            <div key={c._id} className="border-bottom py-2">
+                                                <strong>{c.user_id?.username}</strong>
+                                                <small className="text-muted ms-2">{new Date(c.created_at).toLocaleString()}</small>
+                                                <p className="mb-0 mt-1">{c.comment_text}</p>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
                         </Card.Body>
                     </Card>
 

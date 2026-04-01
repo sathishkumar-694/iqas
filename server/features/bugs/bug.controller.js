@@ -3,6 +3,7 @@ import ActivityLog from '../../shared/models/activityLog.model.js';
 import Project from '../projects/project.model.js';
 import User from '../users/user.model.js';
 import Notification from '../notifications/notification.model.js';
+import { sendBugAssignmentEmail, sendStatusUpdateEmail } from '../../shared/utils/emailService.js';
 import asyncHandler from 'express-async-handler';
 
 // GET /api/bugs/project/:projectId?search=&status=&priority=&label=&page=&limit=
@@ -55,7 +56,7 @@ const getBugById = asyncHandler(async (req, res) => {
 });
 
 const createBug = asyncHandler(async (req, res) => {
-    const { title, description, priority, projectId, assignedTo, dueDate, os, browser, device, labels } = req.body;
+    const { title, description, priority, projectId, assignedTo, dueDate, labels } = req.body;
 
     if (!title || !projectId) {
         res.status(400);
@@ -70,9 +71,6 @@ const createBug = asyncHandler(async (req, res) => {
         reported_by: req.user._id,
         assigned_to: assignedTo,
         due_date: dueDate,
-        os,
-        browser,
-        device,
         labels: labels || [],
     });
 
@@ -93,6 +91,7 @@ const createBug = asyncHandler(async (req, res) => {
     const notifications = Array.from(notifyUsers).map(userId => ({
         user_id: userId,
         message: `New bug created: ${title} in project ${project?.name || projectId}`,
+        link: `/bug/${bug._id}`
     }));
     
     if (notifications.length > 0) {
@@ -101,6 +100,14 @@ const createBug = asyncHandler(async (req, res) => {
         notifications.forEach(n => {
             io.to(n.user_id.toString()).emit('new_notification', n.message);
         });
+    }
+
+    if (assignedTo) {
+        const assignedUser = await User.findById(assignedTo);
+        if (assignedUser) {
+            const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+            sendBugAssignmentEmail(assignedUser, title, `${clientUrl}/bug/${bug._id}`);
+        }
     }
 
     res.status(201).json(bug);
@@ -121,10 +128,7 @@ const updateBug = asyncHandler(async (req, res) => {
         const isTryingToEditCore = 
             (req.body.title && req.body.title !== bug.title) || 
             (req.body.description !== undefined && req.body.description !== bug.description) || 
-            (req.body.priority && req.body.priority !== bug.priority) || 
-            (req.body.os !== undefined && req.body.os !== bug.os) || 
-            (req.body.browser !== undefined && req.body.browser !== bug.browser) || 
-            (req.body.device !== undefined && req.body.device !== bug.device);
+            (req.body.priority && req.body.priority !== bug.priority);
         
         if (isTryingToEditCore) {
             if (req.user.role !== 'Admin' && req.user.role !== 'TL' && req.user._id.toString() !== bug.reported_by.toString()) {
@@ -135,9 +139,6 @@ const updateBug = asyncHandler(async (req, res) => {
             if (req.body.title) bug.title = req.body.title;
             if (req.body.description !== undefined) bug.description = req.body.description;
             if (req.body.priority) bug.priority = req.body.priority;
-            if (req.body.os !== undefined) bug.os = req.body.os;
-            if (req.body.browser !== undefined) bug.browser = req.body.browser;
-            if (req.body.device !== undefined) bug.device = req.body.device;
         }
 
         if (req.body.labels) {
@@ -191,8 +192,15 @@ const updateBug = asyncHandler(async (req, res) => {
             await Notification.create({
                 user_id: updatedBug.assigned_to,
                 message: message,
+                link: `/bug/${updatedBug._id}`
             });
             io.to(updatedBug.assigned_to.toString()).emit('new_notification', message);
+
+            const assignedUser = await User.findById(updatedBug.assigned_to);
+            if (assignedUser) {
+                const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+                sendBugAssignmentEmail(assignedUser, updatedBug.title, `${clientUrl}/bug/${updatedBug._id}`);
+            }
         }
 
         if (req.body.status && req.body.status !== oldStatus) {
@@ -208,11 +216,18 @@ const updateBug = asyncHandler(async (req, res) => {
             const notifications = Array.from(notifyUsers).map(userId => ({
                 user_id: userId,
                 message: `Bug status updated to ${updatedBug.status}: ${updatedBug.title}`,
+                link: `/bug/${updatedBug._id}`
             }));
             if (notifications.length > 0) {
                 await Notification.insertMany(notifications);
                 notifications.forEach(n => {
                     io.to(n.user_id.toString()).emit('new_notification', n.message);
+                });
+
+                const usersToEmail = await User.find({ _id: { $in: Array.from(notifyUsers) } });
+                const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+                usersToEmail.forEach(u => {
+                    sendStatusUpdateEmail(u, updatedBug.title, updatedBug.status, `${clientUrl}/bug/${updatedBug._id}`);
                 });
             }
         }
