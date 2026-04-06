@@ -88,7 +88,8 @@ const generateRefreshToken = (id) => {
     });
 };
 
-const isProduction = process.env.NODE_ENV === 'production';
+// Render automatically sets RENDER=true in its environment
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
 
 const setCookies = (res, accessToken, refreshToken) => {
     res.cookie('accessToken', accessToken, {
