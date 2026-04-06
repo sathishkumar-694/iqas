@@ -19,6 +19,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render's reverse proxy for X-Forwarded-For
 const server = http.createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
