@@ -14,7 +14,6 @@ import { notFound, errorHandler } from './shared/middleware/error.middleware.js'
 import morgan from 'morgan';
 import { stream } from './shared/utils/logger.js';
 
-
 dotenv.config();
 
 connectDB();

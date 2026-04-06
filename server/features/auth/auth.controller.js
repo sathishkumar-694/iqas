@@ -7,20 +7,71 @@ import asyncHandler from 'express-async-handler';
 import Redis from 'ioredis';
 
 // Fallback or Distributed caching setup for secure token management
-const redisClient = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
-const fallbackBlacklist = new Set(); 
+const fallbackBlacklist = new Set();
+let redisClient = null;
+let redisAvailable = false;
+
+if (process.env.REDIS_URL) {
+    try {
+        redisClient = new Redis(process.env.REDIS_URL, {
+            lazyConnect: true,          // Don't connect immediately on creation
+            maxRetriesPerRequest: 1,    // Fail fast per request instead of hanging
+            connectTimeout: 5000,       // 5s connection timeout
+            enableOfflineQueue: false,  // Don't queue commands when disconnected
+            retryStrategy: (times) => {
+                if (times > 3) {
+                    // After 3 failed retries, give up and use fallback
+                    console.warn('[Redis] Connection failed after retries. Falling back to in-memory token store.');
+                    redisAvailable = false;
+                    return null; // Stop retrying
+                }
+                return Math.min(times * 500, 2000); // Backoff: 500ms, 1s, 1.5s...
+            },
+        });
+
+        // Handle errors without crashing the process
+        redisClient.on('error', (err) => {
+            if (redisAvailable) {
+                console.warn(`[Redis] Connection lost: ${err.message}. Using in-memory fallback.`);
+            }
+            redisAvailable = false;
+        });
+
+        redisClient.on('connect', () => {
+            redisAvailable = true;
+            console.log('[Redis] Connected to Redis successfully.');
+        });
+
+        // Attempt initial connection
+        redisClient.connect().catch(() => {
+            console.warn('[Redis] Could not connect to Redis. Token blacklisting will use in-memory fallback.');
+            redisAvailable = false;
+        });
+
+    } catch (err) {
+        console.warn('[Redis] Failed to initialize Redis client. Using in-memory fallback.');
+    }
+}
 
 const addTokenToBlacklist = async (token) => {
-    if (redisClient) {
-        await redisClient.set(`bl_${token}`, 'true', 'EX', 7 * 24 * 60 * 60);
-    } else {
-        fallbackBlacklist.add(token);
+    if (redisClient && redisAvailable) {
+        try {
+            await redisClient.set(`bl_${token}`, 'true', 'EX', 7 * 24 * 60 * 60);
+            return;
+        } catch {
+            // Redis failed mid-operation, fall through to in-memory
+        }
     }
+    fallbackBlacklist.add(token);
 };
 
 const isTokenBlacklisted = async (token) => {
-    if (redisClient) {
-        return (await redisClient.get(`bl_${token}`)) === 'true';
+    if (redisClient && redisAvailable) {
+        try {
+            return (await redisClient.get(`bl_${token}`)) === 'true';
+        } catch {
+            // Redis failed, fall through to in-memory
+        }
     }
     return fallbackBlacklist.has(token);
 };
