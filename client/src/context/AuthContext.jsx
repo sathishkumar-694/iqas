@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/auth/me`);
+            const { data } = await axios.get(`${import.meta.env.VITE_API_URL || ''}/api/auth/me`, { withCredentials: true });
             setUser(data);
         } catch (error) {
             setUser(null);
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const { data } = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/auth/login`, { email, password });
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/auth/login`, { email, password }, { withCredentials: true });
             setUser(data);
             toast.success('Logged in successfully');
             return { success: true };
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
     const adminLogin = async (email, password) => {
         try {
-            const { data } = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/auth/admin-login`, { email, password });
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/auth/admin-login`, { email, password }, { withCredentials: true });
             setUser(data);
             toast.success('Admin login successful');
             return { success: true };
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
                 email,
                 password,
                 role,
-            });
+            }, { withCredentials: true });
             setUser(data);
             toast.success('Registration successful');
             return { success: true };
@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/auth/logout`);
+            await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/auth/logout`, {}, { withCredentials: true });
         } catch (error) {
             // failed to logout cleanly, fallback state triggered
         }
