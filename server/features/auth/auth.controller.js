@@ -94,16 +94,16 @@ const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER
 const setCookies = (res, accessToken, refreshToken) => {
     res.cookie('accessToken', accessToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',  // 'none' required for Vercel → Render cross-origin
+        secure: true,
+        sameSite: 'none',  // Mandatory for Vercel -> Render
         signed: true,
         maxAge: 15 * 60 * 1000, // 15 mins
     });
 
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',  // 'none' required for Vercel → Render cross-origin
+        secure: true,
+        sameSite: 'none',  // Mandatory for Vercel -> Render
         signed: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });

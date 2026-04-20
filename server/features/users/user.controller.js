@@ -9,7 +9,7 @@ const getUsers = asyncHandler(async (req, res) => {
 });
 
 const updateUserProfile = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+password');
 
     if (user) {
         user.username = req.body.username || user.username;

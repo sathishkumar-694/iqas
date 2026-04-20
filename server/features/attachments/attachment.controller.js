@@ -60,7 +60,6 @@ const uploadAttachment = asyncHandler(async (req, res) => {
     res.status(201).json(populated);
 });
 
-// DELETE /api/attachments/:id
 const deleteAttachment = asyncHandler(async (req, res) => {
     const attachment = await Attachment.findById(req.params.id);
     if (!attachment) {

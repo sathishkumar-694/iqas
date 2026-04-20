@@ -50,7 +50,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(morgan('combined', { stream }));
+app.use(morgan('combined', { stream }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 import authRoutes from './features/auth/auth.routes.js';
 import projectRoutes from './features/projects/project.routes.js';

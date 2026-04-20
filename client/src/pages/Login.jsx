@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { Form, Button, Alert, Card, Row, Col } from 'react-bootstrap';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { Shield, Mail, Lock, User as UserIcon, Briefcase } from 'lucide-react';
 
@@ -122,6 +122,15 @@ const Auth = () => {
                                                 style={{ fontSize: '0.9rem' }}
                                                 tabIndex={isRegistering ? -1 : 0}
                                             />
+                                        </div>
+                                        <div className="text-end mt-1">
+                                            <Link 
+                                                to="/forgot-password" 
+                                                className="text-primary text-decoration-none" 
+                                                style={{ fontSize: '0.8rem' }}
+                                            >
+                                                Forgot Password?
+                                            </Link>
                                         </div>
                                     </Form.Group>
 
