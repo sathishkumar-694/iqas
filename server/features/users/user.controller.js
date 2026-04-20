@@ -1,6 +1,7 @@
 import User from './user.model.js';
 import asyncHandler from 'express-async-handler';
 import cloudinary from '../../config/cloudinary.js';
+import { clearCookies } from '../auth/auth.controller.js';
 
 const getUsers = asyncHandler(async (req, res) => {
     const query = req.query.role ? { role: req.query.role } : {};
@@ -15,11 +16,17 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         user.username = req.body.username || user.username;
         user.email = req.body.email || user.email;
         
+        let passwordChanged = false;
         if (req.body.password) {
             user.password = req.body.password;
+            passwordChanged = true;
         }
 
         const updatedUser = await user.save();
+
+        if (passwordChanged) {
+            clearCookies(res);
+        }
 
         res.json({
             _id: updatedUser._id,
@@ -27,6 +34,8 @@ const updateUserProfile = asyncHandler(async (req, res) => {
             email: updatedUser.email,
             role: updatedUser.role,
             avatar: updatedUser.avatar,
+            passwordChanged, // Let frontend know if logout occurred
+            message: passwordChanged ? 'Password updated. Please log in again.' : 'Profile updated successfully'
         });
     } else {
         res.status(404);

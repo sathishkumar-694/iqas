@@ -1,5 +1,5 @@
-import dotenv from "dotenv"
-dotenv.config();
+import logger from '../utils/logger.js';
+
 const notFound = (req, res, next) => {
     const error = new Error(`Not Found - ${req.originalUrl}`);
     res.status(404);
@@ -7,6 +7,18 @@ const notFound = (req, res, next) => {
 };
 
 const errorHandler = (err, req, res, next) => {
+    // Log the error for debugging
+    const errorLog = `${err.message} - ${req ? req.method : 'N/A'} ${req ? req.originalUrl : 'N/A'} - ${req ? req.ip : 'N/A'}`;
+    logger.error(errorLog);
+
+    if (process.env.NODE_ENV !== 'production' && err.stack) {
+        console.error(err.stack);
+    }
+
+    if (typeof next !== 'function') {
+        console.warn('⚠️ Warning: errorHandler called without a valid next function reference.');
+    }
+
     let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
     let message = err.message;
 

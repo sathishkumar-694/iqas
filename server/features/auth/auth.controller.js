@@ -1,8 +1,7 @@
 import crypto from 'crypto';
 import User from '../users/user.model.js';
 import jwt from 'jsonwebtoken';
-import { Resend } from 'resend';
-import { sendWelcomeEmail } from '../../shared/utils/emailService.js';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../../shared/utils/emailService.js';
 import asyncHandler from 'express-async-handler';
 import Redis from 'ioredis';
 
@@ -106,6 +105,23 @@ const setCookies = (res, accessToken, refreshToken) => {
         sameSite: 'none',  // Mandatory for Vercel -> Render
         signed: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+};
+
+const clearCookies = (res) => {
+    res.cookie('accessToken', '', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        signed: true,
+        expires: new Date(0),
+    });
+    res.cookie('refreshToken', '', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        signed: true,
+        expires: new Date(0),
     });
 };
 
@@ -224,8 +240,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         await addTokenToBlacklist(refreshToken);
     }
     
-    res.cookie('accessToken', '', { httpOnly: true, signed: true, expires: new Date(0) });
-    res.cookie('refreshToken', '', { httpOnly: true, signed: true, expires: new Date(0) });
+    clearCookies(res);
     res.json({ message: 'Logged out successfully' });
 });
 
@@ -269,7 +284,8 @@ const getMe = asyncHandler(async (req, res) => {
     }
 });
 
-const forgotPassword = asyncHandler(async (req, res) => {
+const forgotPassword = asyncHandler(async (req, res, next) => {
+    console.log(`[AUTH] Forgot Password request for: ${req.body.email}`);
     const { email } = req.body;
 
     const user = await User.findOne({ email }).select('+password');
@@ -288,29 +304,11 @@ const forgotPassword = asyncHandler(async (req, res) => {
     const origin = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
     const resetUrl = `${origin}/reset-password/${resetToken}`;
 
-    if (process.env.RESEND_API_KEY) {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-
-        try {
-            await resend.emails.send({
-                from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-                to: user.email,
-                subject: 'IQAS - Password Reset Request',
-                html: `<h3>Password Reset</h3><p>Click the link below to reset your password. This link expires in 30 minutes.</p><a href="${resetUrl}">${resetUrl}</a>`,
-            });
-            res.json({ message: 'Password reset email sent' });
-        } catch (error) {
-            console.error('Resend error:', error);
-            res.status(500);
-            throw new Error('Failed to send password reset email');
-        }
-    } else {
-        console.log(`[DEV] Password reset link: ${resetUrl}`);
-        res.json({ message: 'Password reset link generated (check server console in dev mode)', resetUrl });
-    }
+    await sendPasswordResetEmail(user, resetUrl);
+    res.json({ message: 'Password reset email sent' });
 });
 
-const resetPassword = asyncHandler(async (req, res) => {
+const resetPassword = asyncHandler(async (req, res, next) => {
     const { password } = req.body;
 
     if (!password || password.length < 6) {
@@ -335,7 +333,8 @@ const resetPassword = asyncHandler(async (req, res) => {
     user.resetPasswordExpire = undefined;
     await user.save();
 
-    res.json({ message: 'Password reset successful. You can now log in.' });
+    clearCookies(res);
+    res.json({ message: 'Password reset successful. All sessions logged out. Please log in again.' });
 });
 
-export { loginUser, registerUser, adminLogin, logoutUser, refreshAccessToken, getMe, forgotPassword, resetPassword };
+export { loginUser, registerUser, adminLogin, logoutUser, refreshAccessToken, getMe, forgotPassword, resetPassword, clearCookies };

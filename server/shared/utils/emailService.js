@@ -14,6 +14,10 @@ export const sendWelcomeEmail = async (user) => {
     const resend = getResend();
     if (!resend) return;
 
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n📧 [DEV] Welcome Email -> To: ${user.email}, Role: ${user.role}\n`);
+    }
+
     try {
         await resend.emails.send({
             from: FROM_EMAIL,
@@ -37,6 +41,10 @@ export const sendWelcomeEmail = async (user) => {
 export const sendBugAssignmentEmail = async (user, bugTitle, bugLink) => {
     const resend = getResend();
     if (!resend) return;
+
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n📧 [DEV] Bug Assignment -> To: ${user.email}, Title: ${bugTitle}\n`);
+    }
 
     try {
         await resend.emails.send({
@@ -65,6 +73,10 @@ export const sendProjectInviteEmail = async (user, projectName, clientUrl) => {
     const resend = getResend();
     if (!resend) return;
 
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n📧 [DEV] Project Invitation -> To: ${user.email}, Project: ${projectName}\n`);
+    }
+
     try {
         await resend.emails.send({
             from: FROM_EMAIL,
@@ -89,6 +101,10 @@ export const sendStatusUpdateEmail = async (user, bugTitle, newStatus, bugLink) 
     const resend = getResend();
     if (!resend) return;
 
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n📧 [DEV] Status Update -> To: ${user.email}, Bug: ${bugTitle}, Status: ${newStatus}\n`);
+    }
+
     try {
         await resend.emails.send({
             from: FROM_EMAIL,
@@ -106,5 +122,41 @@ export const sendStatusUpdateEmail = async (user, bugTitle, newStatus, bugLink) 
         });
     } catch (error) {
         console.error('Error sending status update email:', error);
+    }
+};
+
+export const sendPasswordResetEmail = async (user, resetUrl) => {
+    const resend = getResend();
+    if (!resend) return;
+
+    if (process.env.NODE_ENV !== 'production') {
+        console.log('\n--- 🔐 [DEV] PASSWORD RESET EMAIL ---');
+        console.log(`To: ${user.email}`);
+        console.log(`Link: ${resetUrl}`);
+        console.log('-------------------------------------\n');
+    }
+
+    try {
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: user.email,
+            subject: 'IQAS - Password Reset Request 🔐',
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2>Password Reset Request</h2>
+                    <p>Hi ${user.username},</p>
+                    <p>We received a request to reset your password for your IQAS account. Click the button below to set a new password. This link will expire in 30 minutes.</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #0366d6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset My Password</a>
+                    </div>
+                    <p style="font-size: 14px; color: #666;">If the button above doesn't work, copy and paste this link into your browser:</p>
+                    <p style="font-size: 14px; color: #0366d6; word-break: break-all;">${resetUrl}</p>
+                    <hr style="border: none; border-top: 1px solid #eaeaea; margin: 30px 0;" />
+                    <p style="color: #666; font-size: 12px;">If you did not request this, you can safely ignore this email. Your password will remain unchanged.</p>
+                </div>
+            `,
+        });
+    } catch (error) {
+        console.error('Error sending password reset email:', error);
     }
 };
