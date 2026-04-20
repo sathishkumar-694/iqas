@@ -272,7 +272,7 @@ const getMe = asyncHandler(async (req, res) => {
 const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
         res.status(404);
         throw new Error('No account found with that email');

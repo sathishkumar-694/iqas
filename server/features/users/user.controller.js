@@ -40,7 +40,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
         throw new Error('Please upload an image file');
     }
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+password');
     if (!user) {
         res.status(404);
         throw new Error('User not found');
@@ -99,7 +99,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 });
 
 const updateUserRole = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select('+password');
 
     if (user) {
         if (user.role === 'Admin' && user.email === 'admin@iqas.com') {
