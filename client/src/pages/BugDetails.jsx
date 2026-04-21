@@ -201,7 +201,7 @@ const BugDetails = () => {
                                             {attachments.map(att => (
                                                 <ListGroup.Item key={att._id} className="d-flex justify-content-between align-items-center bg-transparent px-0 py-1 border-0">
                                                     <div>
-                                                        <a href={`${import.meta.env.VITE_API_URL}${att.file_url}`} target="_blank" rel="noopener noreferrer" className="text-decoration-none fw-medium">
+                                                        <a href={att.file_url.startsWith('http') ? att.file_url : `${import.meta.env.VITE_API_URL}${att.file_url}`} target="_blank" rel="noopener noreferrer" className="text-decoration-none fw-medium">
                                                             📎 {att.file_name}
                                                         </a>
                                                         <small className="text-muted ms-2">by {att.uploaded_by?.username}</small>

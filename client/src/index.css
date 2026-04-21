@@ -41,6 +41,13 @@ body {
 }
 
 /* Specific Badge Colors based on Mockups */
+.text-gradient {
+    background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 .badge-active {
     background-color: #e0e7ff !important;
     color: #3730a3 !important;
@@ -309,4 +316,107 @@ input:checked+.slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+}
+
+/* UI Enhancements for Reports & Analytics */
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.stat-card {
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    border: none;
+    overflow: hidden;
+    position: relative;
+    color: #ffffff !important;
+}
+
+.stat-card h2, 
+.stat-card small,
+.stat-card .lucide,
+.stat-card svg {
+    color: #ffffff !important;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card .icon-blob {
+    position: absolute;
+    right: -20px;
+    top: -20px;
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.chart-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom Chart Tooltip */
+.custom-recharts-tooltip {
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #fff;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.custom-recharts-tooltip p {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.custom-recharts-tooltip .label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #38bdf8;
+}
+
+.bg-gradient-indigo {
+    background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%);
+}
+
+.bg-gradient-rose {
+    background: linear-gradient(135deg, #9f1239 0%, #4c0519 100%);
+}
+
+.bg-gradient-emerald {
+    background: linear-gradient(135deg, #065f46 0%, #064e3b 100%);
+}
+
+.bg-gradient-amber {
+    background: linear-gradient(135deg, #78350f 0%, #451b03 100%);
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.bg-indigo-soft {
+    background-color: #e0e7ff;
+}
+
+.text-indigo {
+    color: #4f46e5;
 }
