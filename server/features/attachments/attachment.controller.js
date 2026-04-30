@@ -8,10 +8,16 @@ import cloudinary from '../../config/cloudinary.js';
 // Configure multer storage with Cloudinary
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: 'iqas-attachments',
-        // allow various resource types since attachments can be pdf, zip, etc (if cloudinary supports it)
-        resource_type: 'auto',
+    params: async (req, file) => {
+        const ext = path.extname(file.originalname);
+        const nameWithoutExt = path.parse(file.originalname).name.replace(/[^a-zA-Z0-9]/g, '_');
+        return {
+            folder: 'iqas-attachments',
+            resource_type: 'auto',
+            // Append extension to public_id to ensure raw files (like pdf, zip) 
+            // retain their extension when downloaded from Cloudinary.
+            public_id: `${nameWithoutExt}_${Date.now()}${ext}`,
+        };
     },
 });
 

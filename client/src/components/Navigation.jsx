@@ -64,6 +64,9 @@ const Navigation = () => {
                                 Users
                             </Nav.Link>
                         )}
+                        <Nav.Link as={Link} to="/leaderboard" className={location.pathname === '/leaderboard' ? 'active' : ''}>
+                            🏆 Leaderboard
+                        </Nav.Link>
                     </Nav>
                 </Navbar.Collapse>
 

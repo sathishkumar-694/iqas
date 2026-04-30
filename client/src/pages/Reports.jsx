@@ -61,6 +61,7 @@ const Reports = () => {
     };
 
     if (loading) return <Container className="text-center mt-5"><Spinner animation="border" /></Container>;
+    if (user?.role !== 'Admin' && user?.role !== 'TL') return <Container className="mt-5 text-center"><h3>Access Denied</h3><p>Only Administrators and Team Leads can view system-wide analytics.</p></Container>;
     if (!stats) return <Container className="mt-4"><p>Failed to load reports.</p></Container>;
 
     const statusData = Object.entries(stats.bugsByStatus).map(([name, value]) => ({ name, value }));
@@ -107,23 +108,34 @@ const Reports = () => {
                 ))}
             </Row>
 
-            {stats.avgResolutionHours > 0 && (
-                <Row className="mb-5">
-                    <Col>
-                        <Card className="glass-card border-0 p-4 text-center">
-                            <div className="d-flex align-items-center justify-content-center gap-3">
-                                <div className="p-3 bg-light rounded-circle text-primary">
-                                    <Clock size={24} />
-                                </div>
-                                <div>
-                                    <h4 className="mb-0 fw-bold">{stats.avgResolutionHours} Hours</h4>
-                                    <small className="text-muted">Average Bug Resolution Time</small>
-                                </div>
+            <Row className="mb-5 g-4">
+                <Col md={6}>
+                    <Card className="glass-card border-0 p-4 text-center">
+                        <div className="d-flex align-items-center justify-content-center gap-3">
+                            <div className="p-3 bg-light rounded-circle text-primary">
+                                <Clock size={24} />
                             </div>
-                        </Card>
-                    </Col>
-                </Row>
-            )}
+                            <div>
+                                <h4 className="mb-0 fw-bold">{stats.avgResolutionHours} Hours</h4>
+                                <small className="text-muted">Average Bug Resolution Time</small>
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+                <Col md={6}>
+                    <Card className="glass-card border-0 p-4 text-center">
+                        <div className="d-flex align-items-center justify-content-center gap-3">
+                            <div className="p-3 bg-light rounded-circle text-warning">
+                                <TrendingUp size={24} />
+                            </div>
+                            <div>
+                                <h4 className="mb-0 fw-bold">{(stats.qualityMetrics?.[0]?.avgComplexity || 0).toFixed(1)} / 5</h4>
+                                <small className="text-muted">Average Bug Complexity</small>
+                            </div>
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
 
             {/* Charts Row */}
             <Row className="mb-5 g-4 text-center">
@@ -229,7 +241,10 @@ const Reports = () => {
                                                         <div className="bg-light rounded-circle d-flex align-items-center justify-content-center fw-bold text-primary" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>
                                                             {a.username.charAt(0).toUpperCase()}
                                                         </div>
-                                                        <span className="fw-medium">{a.username}</span>
+                                                        <div>
+                                                            <div className="fw-medium">{a.username}</div>
+                                                            <div className="text-muted smallest">{a.points || 0} Points</div>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td className="text-end font-monospace"><Badge className="bg-indigo-soft text-indigo px-3">{a.count}</Badge></td>

@@ -16,6 +16,7 @@ const AdminUserList = lazy(() => import('./pages/AdminUserList'));
 const Reports = lazy(() => import('./pages/Reports'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 
 const SuspenseFallback = () => (
     <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
@@ -45,6 +46,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute><AdminUserList /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
 
             {/* Default Route */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -18,6 +18,7 @@ const ProjectDetails = () => {
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
+    const [projectStats, setProjectStats] = useState(null);
 
     useEffect(() => {
         const fetchProjectData = async () => {
@@ -34,6 +35,9 @@ const ProjectDetails = () => {
                 setAssignedMembers(tMembers);
 
                 if (user.role === 'Admin' || user.role === 'TL') {
+                    const statsRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports/project/${id}`, config);
+                    setProjectStats(statsRes.data);
+
                     const usersRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`, config);
                     let avail = usersRes.data.filter(u => !tMembers.some(m => m._id === u._id) && u.role !== 'Admin');
                     
@@ -149,6 +153,38 @@ const ProjectDetails = () => {
                         </div>
 
                         {/* Real-time Math Analytics / Report Banner */}
+                        {/* Project Performance Dashboard (Admin/TL Only) */}
+                        {(user?.role === 'Admin' || user?.role === 'TL') && projectStats && (
+                            <Row className="mb-4">
+                                <Col md={12}>
+                                    <Card className="border-0 shadow-sm rounded-4 bg-dark text-white p-4">
+                                        <Row className="align-items-center">
+                                            <Col md={3}>
+                                                <h5 className="fw-bold text-info mb-1">Project Health</h5>
+                                                <div className="display-4 fw-bold">
+                                                    {Math.round((bugs.filter(b => b.status === 'Resolved' || b.status === 'Closed').length / (bugs.length || 1)) * 100)}%
+                                                </div>
+                                                <small className="opacity-75">Completion Rate</small>
+                                            </Col>
+                                            <Col md={3}>
+                                                <h6 className="opacity-75 mb-1">Avg Complexity</h6>
+                                                <h3 className="fw-bold">{(projectStats.qualityMetrics?.[0]?.avgComplexity || 0).toFixed(1)} / 5</h3>
+                                            </Col>
+                                            <Col md={3}>
+                                                <h6 className="opacity-75 mb-1">Avg Resolution</h6>
+                                                <h3 className="fw-bold">{projectStats.avgResolutionHours} hrs</h3>
+                                            </Col>
+                                            <Col md={3}>
+                                                <h6 className="opacity-75 mb-1">Top Performer</h6>
+                                                <h5 className="fw-bold text-warning">{projectStats.topAssignees?.[0]?.username || 'N/A'}</h5>
+                                                <small className="opacity-75">{projectStats.topAssignees?.[0]?.points || 0} pts</small>
+                                            </Col>
+                                        </Row>
+                                    </Card>
+                                </Col>
+                            </Row>
+                        )}
+
                         <Row className="mb-4">
                             <Col md={3} sm={6} className="mb-3 mb-md-0">
                                 <Card className="border-0 shadow-sm rounded-4 h-100 overflow-hidden position-relative">

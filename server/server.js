@@ -60,6 +60,7 @@ import userRoutes from './features/users/user.routes.js';
 import notificationRoutes from './features/notifications/notification.routes.js';
 import attachmentRoutes from './features/attachments/attachment.routes.js';
 import reportRoutes from './features/reports/report.routes.js';
+import rankingRoutes from './features/ranking/ranking.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
@@ -69,6 +70,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/ranking', rankingRoutes);
 
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Server is running', status: 'OK' });

@@ -138,6 +138,8 @@ const AdminUserList = () => {
                             <tr>
                                 <th className="py-3 px-4 border-bottom-0 rounded-top-start w-25">User</th>
                                 <th className="py-3 px-4 border-bottom-0 w-25">Email</th>
+                                <th className="py-3 px-4 border-bottom-0 text-center">Points</th>
+                                <th className="py-3 px-4 border-bottom-0 text-center">Rank</th>
                                 <th className="py-3 px-4 border-bottom-0 text-center w-25">Role</th>
                                 <th className="py-3 px-4 border-bottom-0 text-end rounded-top-end w-25">Actions</th>
                             </tr>
@@ -151,6 +153,12 @@ const AdminUserList = () => {
                                 <tr key={u._id}>
                                     <td className="py-3 px-4 fw-medium text-body">{u.username}</td>
                                     <td className="py-3 px-4 text-muted">{u.email}</td>
+                                    <td className="py-3 px-4 text-center fw-bold text-primary">{u.points || 0}</td>
+                                    <td className="py-3 px-4 text-center">
+                                        <Badge bg={u.rank === 4 ? 'info' : u.rank === 3 ? 'warning' : u.rank === 2 ? 'secondary' : 'dark'}>
+                                            {u.rank === 4 ? 'Plat' : u.rank === 3 ? 'Gold' : u.rank === 2 ? 'Silv' : 'Bron'}
+                                        </Badge>
+                                    </td>
                                     <td className="py-3 px-4 text-center">
                                         {u.email === 'admin@iqas.com' ? (
                                             <Badge bg="transparent" className="badge-pill-custom bg-dark text-white shadow-sm border border-dark">

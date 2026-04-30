@@ -3,21 +3,27 @@ import Project from '../projects/project.model.js';
 import User from '../users/user.model.js';
 import asyncHandler from 'express-async-handler';
 
-// GET /api/reports/dashboard — aggregated dashboard stats
+// GET /api/reports/dashboard OR /api/reports/project/:projectId
 const getDashboardStats = asyncHandler(async (req, res) => {
-    const totalProjects = await Project.countDocuments();
-    const totalBugs = await Bug.countDocuments();
-    const totalUsers = await User.countDocuments();
+    const { projectId } = req.params;
+    const query = projectId ? { project_id: projectId } : {};
+
+    const totalProjects = projectId ? 1 : await Project.countDocuments();
+    const totalBugs = await Bug.countDocuments(query);
+    const totalUsers = projectId ? (await Project.findById(projectId)).team_members.length : await User.countDocuments();
 
     const bugsByStatus = await Bug.aggregate([
+        { $match: query },
         { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
 
     const bugsByPriority = await Bug.aggregate([
+        { $match: query },
         { $group: { _id: '$priority', count: { $sum: 1 } } },
     ]);
 
     const bugsOverTime = await Bug.aggregate([
+        { $match: query },
         {
             $group: {
                 _id: {
@@ -48,7 +54,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     ]);
 
     const topAssignees = await Bug.aggregate([
-        { $match: { assigned_to: { $ne: null } } },
+        { $match: { ...query, assigned_to: { $ne: null } } },
         { $group: { _id: '$assigned_to', count: { $sum: 1 } } },
         {
             $lookup: {
@@ -59,18 +65,32 @@ const getDashboardStats = asyncHandler(async (req, res) => {
             },
         },
         { $unwind: '$user' },
-        { $project: { username: '$user.username', count: 1 } },
+        { $project: { username: '$user.username', points: '$user.points', count: 1 } },
         { $sort: { count: -1 } },
         { $limit: 10 },
     ]);
 
     const overdueBugs = await Bug.countDocuments({
+        ...query,
         due_date: { $lt: new Date() },
         status: { $nin: ['Closed', 'Resolved'] },
     });
 
+    const qualityMetrics = await Bug.aggregate([
+        { $match: query },
+        {
+            $group: {
+                _id: null,
+                avgComplexity: { $avg: '$complexity' },
+                reopenedCount: {
+                    $sum: { $cond: [{ $in: ['$status', ['Open', 'In Progress']] }, 1, 0] } // simplified reopening check
+                }
+            }
+        }
+    ]);
+
     const avgResolutionTime = await Bug.aggregate([
-        { $match: { status: 'Closed' } },
+        { $match: { ...query, status: 'Closed' } },
         {
             $project: {
                 resolutionTime: {

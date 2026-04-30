@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import CreateProjectModal from '../components/CreateProjectModal';
-import { Search, Plus, FolderOpen } from 'lucide-react';
+import { Search, Plus, FolderOpen, Trophy, Target, Activity } from 'lucide-react';
 
 const Dashboard = () => {
     const { user } = useContext(AuthContext);
@@ -15,6 +15,16 @@ const Dashboard = () => {
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+    const [qualityStats, setQualityStats] = useState(null);
+
+    const fetchQualityStats = async () => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ranking/stats/${user._id}`, { withCredentials: true });
+            setQualityStats(res.data);
+        } catch (error) {
+            console.error('Error fetching quality stats:', error);
+        }
+    };
 
     const fetchProjects = async (searchTerm = '', pageNum = 1) => {
         try {
@@ -30,6 +40,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchProjects(search, page);
+        fetchQualityStats();
     }, [page]);
 
     useEffect(() => {
@@ -56,6 +67,44 @@ const Dashboard = () => {
 
     return (
         <Container className="mt-4 mb-5">
+            {/* Quality Metrics Ribbon */}
+            {qualityStats && (
+                <Row className="mb-4">
+                    <Col md={12}>
+                        <Card className="border-0 shadow-sm bg-primary text-white overflow-hidden" style={{ borderRadius: '15px' }}>
+                            <Card.Body className="p-4 d-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center">
+                                    <div className="bg-white bg-opacity-25 p-3 rounded-circle me-3">
+                                        <Trophy size={32} />
+                                    </div>
+                                    <div>
+                                        <h4 className="mb-0 fw-bold">{qualityStats.rankName} Rank</h4>
+                                        <p className="mb-0 opacity-75">Quality Points: {qualityStats.points}</p>
+                                    </div>
+                                </div>
+                                <div className="d-none d-md-flex gap-4">
+                                    <div className="text-center">
+                                        <div className="fw-bold fs-5">{qualityStats.bugs_resolved_count || 0}</div>
+                                        <div className="small opacity-75">Resolved</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="fw-bold fs-5">{qualityStats.efficiency_score || 0}%</div>
+                                        <div className="small opacity-75">Efficiency</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="fw-bold fs-5">{qualityStats.bugs_reported_count || 0}</div>
+                                        <div className="small opacity-75">Reported</div>
+                                    </div>
+                                </div>
+                                <Button variant="light" size="sm" className="fw-bold px-3 py-2" onClick={() => navigate('/leaderboard')}>
+                                    View Leaderboard
+                                </Button>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+            )}
+
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2>📁 Projects</h2>
                 {(user.role === 'Admin' || user.role === 'TL') && (

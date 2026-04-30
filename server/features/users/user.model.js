@@ -31,6 +31,34 @@ const userSchema = mongoose.Schema({
         type: String,
         default: '',
     },
+    points: {
+        type: Number,
+        default: 0,
+    },
+    rank: {
+        type: Number,
+        default: 1, // 1: Bronze, 2: Silver, 3: Gold, 4: Platinum
+    },
+    efficiency_score: {
+        type: Number,
+        default: 0,
+    },
+    experience_years: {
+        type: Number,
+        default: 0,
+    },
+    bugs_resolved_count: {
+        type: Number,
+        default: 0,
+    },
+    bugs_reported_count: {
+        type: Number,
+        default: 0,
+    },
+    bugs_reopened_count: {
+        type: Number,
+        default: 0,
+    },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
 }, {

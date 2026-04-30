@@ -41,6 +41,11 @@ const bugSchema = mongoose.Schema({
     due_date: {
         type: Date,
     },
+    complexity: {
+        type: Number,
+        enum: [1, 2, 3, 4, 5],
+        default: 1,
+    },
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 });

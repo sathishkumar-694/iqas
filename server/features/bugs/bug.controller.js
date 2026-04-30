@@ -4,6 +4,7 @@ import Project from '../projects/project.model.js';
 import User from '../users/user.model.js';
 import Notification from '../notifications/notification.model.js';
 import { sendBugAssignmentEmail, sendStatusUpdateEmail } from '../../shared/utils/emailService.js';
+import { analyzeBug } from '../../shared/utils/aiService.js';
 import asyncHandler from 'express-async-handler';
 
 // GET /api/bugs/project/:projectId?search=&status=&priority=&label=&page=&limit=
@@ -63,16 +64,51 @@ const createBug = asyncHandler(async (req, res) => {
         throw new Error('Please add title and project ID');
     }
 
+    // AI Analysis
+    const aiAnalysis = await analyzeBug(title, description);
+    const finalPriority = priority || aiAnalysis.suggestedPriority || 'Medium';
+    const complexity = aiAnalysis.complexity || 2;
+
+    let finalAssignedTo = assignedTo;
+
+    // Smart Auto-Assignment if no assignee provided
+    if (!finalAssignedTo) {
+        const potentialAssignees = await User.find({ 
+            role: 'Dev', 
+            rank: { $gte: complexity - 1 } 
+        });
+
+        if (potentialAssignees.length > 0) {
+            // Find user with minimum active bugs
+            const activeBugsCount = await Bug.aggregate([
+                { $match: { status: { $in: ['Open', 'In Progress'] } } },
+                { $group: { _id: '$assigned_to', count: { $sum: 1 } } }
+            ]);
+
+            const countsMap = activeBugsCount.reduce((acc, curr) => {
+                if (curr._id) acc[curr._id.toString()] = curr.count;
+                return acc;
+            }, {});
+
+            potentialAssignees.sort((a, b) => (countsMap[a._id.toString()] || 0) - (countsMap[b._id.toString()] || 0));
+            finalAssignedTo = potentialAssignees[0]._id;
+        }
+    }
+
     const bug = await Bug.create({
         title,
         description,
-        priority,
+        priority: finalPriority,
+        complexity,
         project_id: projectId,
         reported_by: req.user._id,
-        assigned_to: assignedTo,
+        assigned_to: finalAssignedTo,
         due_date: dueDate,
         labels: labels || [],
     });
+
+    // Award points for reporting
+    await User.findByIdAndUpdate(req.user._id, { $inc: { points: 10, bugs_reported_count: 1 } });
 
     await ActivityLog.create({
         user_id: req.user._id,
@@ -166,6 +202,31 @@ const updateBug = asyncHandler(async (req, res) => {
             }
 
             bug.status = req.body.status;
+
+            // QUALITY LOGIC: Points Award or Penalty
+            if (req.body.status === 'Resolved' || req.body.status === 'Closed') {
+                if (bug.assigned_to) {
+                    const priorityWeight = { 'Critical': 5, 'High': 3, 'Medium': 2, 'Low': 1 }[bug.priority] || 2;
+                    const basePoints = (bug.complexity || 2) * priorityWeight * 5;
+                    
+                    // Bonus for speed (within 24h)
+                    const isFast = (new Date() - new Date(bug.created_at)) < (24 * 60 * 60 * 1000);
+                    const finalPoints = isFast ? Math.round(basePoints * 1.25) : basePoints;
+
+                    await User.findByIdAndUpdate(bug.assigned_to, { 
+                        $inc: { points: finalPoints, bugs_resolved_count: 1 } 
+                    });
+                }
+            }
+
+            // Penalty for Reopening
+            if ((oldStatus === 'Resolved' || oldStatus === 'Closed') && (req.body.status === 'Open' || req.body.status === 'In Progress')) {
+                if (bug.assigned_to) {
+                    await User.findByIdAndUpdate(bug.assigned_to, { 
+                        $inc: { points: -20, bugs_reopened_count: 1 } 
+                    });
+                }
+            }
         }
 
         bug.assigned_to = req.body.assignedTo || bug.assigned_to;
